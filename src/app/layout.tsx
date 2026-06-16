@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { GeistMono } from "geist/font/mono";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { NavPanel } from "@/components/NavPanel";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "aetos",
-  description: "A brutalist terminal portfolio by Pushpendra.",
+  description: "I build small, sharp systems that make hidden complexity operable.",
 };
 
 export default function RootLayout({
@@ -12,8 +15,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body>{children}</body>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var theme = localStorage.getItem('theme');
+                if (theme === 'light') {
+                  document.documentElement.classList.remove('dark');
+                } else if (!theme && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                  document.documentElement.classList.remove('dark');
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className={GeistMono.variable}>
+        <ThemeToggle />
+        <div className="fixed top-12 left-0 w-full flex justify-center z-40">
+          <NavPanel />
+        </div>
+        {children}
+      </body>
     </html>
   );
 }

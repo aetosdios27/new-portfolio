@@ -1,19 +1,30 @@
 ---
-title: Konto
-slug: konto
-year: 2025
-tags: [fintech, systems, ledger]
-accent: "#7dd3fc"
-status: active
+title: "Konto"
+slug: "konto"
+year: 2024
+tags: ["TypeScript","PostgreSQL","Turborepo","pnpm"]
 links:
-  github: https://github.com/aetosdios27/Konto
+  deploy: "https://github.com/aetosdios27/Konto"
 ---
 
-// what
-Konto is a compact ledger-oriented project for modeling financial state without pretending money is a scalar.
+Open-Source Double-Entry Ledger Engine
 
-// why
-Financial systems fail when mutation, identity, and auditability are treated as afterthoughts.
+// bullet
 
-// how
-The implementation keeps account state explicit, tracks transitions as first-class records, and treats reconciliation as core behavior.
+Engineered a production-grade double-entry ledger from scratch — enforces zero-sum conservation via bigint-only arithmetic and a deferred PostgreSQL constraint trigger that makes unbalanced journals physically impossible to commit, regardless of application bugs.
+
+// bullet
+
+Eliminated deadlocks by sorting account IDs lexicographically before issuing FOR UPDATE locks — validated under 1,000+ concurrent transfers and holds with zero deadlocks observed. Patched V8 float decay via ::text casting at every Postgres boundary, preventing silent precision loss above 2^53.
+
+// bullet
+
+Designed O(1) balance reads via LATERAL JOIN against snapshot checkpoints — bounds historical scan range regardless of total entry volume. Implemented keyset pagination on journal history and UNNEST bulk inserts for single-round-trip journal leg insertion.
+
+// bullet
+
+Shipped a Prisma-pattern DX generator that reads konto.config.ts at runtime via jiti, infers Zod schema shapes, and emits a fully typed proxy client to node_modules/.konto/ — zero tsconfig modifications required, zero runtime overhead.
+
+// bullet
+
+Built a complete agent finance pipeline: headless MCP server (Bun binary, stdio transport) exposes read tools and staged-intent mutation tools — agent payloads are validated and persisted to konto_staged_intents with TTL, never auto-executed. Human approves via npx @konto/cli approve <id>.

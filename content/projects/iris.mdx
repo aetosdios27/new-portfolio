@@ -1,19 +1,18 @@
 ---
-title: Iris
-slug: iris
-year: 2024
-tags: [vision, tooling, interface]
-accent: "#a7f3d0"
-status: draft
+title: "Iris"
+slug: "iris"
+year: 2023
+tags: ["Rust","Vulkan (ash)","DMA-BUF","GTK 4.14"]
 links:
-  github: https://github.com/aetosdios27
+  deploy: "https://iris-landing-page-tan.vercel.app"
 ---
 
-// what
-Iris is an interface experiment around inspecting visual state, metadata, and small transformations in one place.
+Zero-Copy GPU Image Viewer
 
-// why
-Visual tooling gets slow when every operation requires switching context.
+// bullet
 
-// how
-The scaffold favors direct manipulation, local previews, and a narrow processing pipeline that can be swapped without rewriting the UI.
+Built a zero-CPU-copy image display pipeline on Linux using raw Vulkan external memory (ash) and DMA-BUF, eliminating all host-side pixel transfers in the hot path.
+
+// bullet
+
+Reconstructed the rendering backend from wgpu to raw Vulkan after identifying ownership model incompatibilities with external memory handles.
