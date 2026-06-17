@@ -26,6 +26,18 @@ export default function ProjectsPage() {
     return images[slug] || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1200&q=80";
   };
 
+  const getProjectSummary = (slug: string) => {
+    const summaries: Record<string, string> = {
+      "webnotes": "local-first collaborative notes app with stateless CRDT sync on serverless functions",
+      "konto": "mathematically strict embeddable double-entry accounting engine for TypeScript",
+      "styx": "production-grade BitTorrent client in Rust, correct and private by construction",
+      "iris": "zero-copy GPU image viewer for Linux, raw Vulkan, zero CPU copies in the display path",
+      "axiom-core": "registry and CLI for AI agent style guides, one schema, seven output formats",
+      "vmrl": "mathematical runtime and simulation framework"
+    };
+    return summaries[slug] || "SYSTEM OF RECORD // BRUTALIST ARCHITECTURE";
+  };
+
   return (
     <main className="min-h-svh flex flex-col pt-32 pb-16">
       <div className="flex flex-col w-full max-w-[640px] mx-auto px-6 lg:px-0">        
@@ -68,7 +80,7 @@ export default function ProjectsPage() {
                   </div>
                 </div>
                 <div className="text-[13px] opacity-70 text-[var(--text)] mt-3 transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/item:translate-x-2">
-                  {project.tags.slice(0, 3).join(" · ")}
+                  {getProjectSummary(project.slug)}
                 </div>
               </Link>
               <div className="flex flex-col items-end w-16 flex-shrink-0 gap-3 relative z-10">
