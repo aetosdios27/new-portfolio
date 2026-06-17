@@ -138,7 +138,7 @@ export function FlightBoard({ projects }: FlightBoardProps) {
                   }}
                   className="text-[12px] font-bold opacity-40 group-hover:opacity-100 transition-all text-[var(--text)] no-underline flex items-center"
                 >
-                  <span className="inline-block transition-transform duration-75 group-hover:rotate-45 text-[15px] leading-none">
+                  <span className="inline-block transition-transform duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:rotate-45 text-[15px] leading-none">
                     ↗
                   </span>
                 </Link>
@@ -151,7 +151,7 @@ export function FlightBoard({ projects }: FlightBoardProps) {
             >
               <div className="overflow-hidden min-h-0 w-full">
                 <div className="p-4 pt-0 w-full h-[240px] flex flex-col">
-                <div className="relative w-full h-full border border-[var(--text)]/20 bg-[var(--text)]/5 overflow-hidden group-hover:shadow-[4px_4px_0px_var(--text)] transition-shadow duration-75">
+                <div className="relative w-full h-full border border-[var(--text)]/20 bg-[var(--text)]/5 overflow-hidden group-hover:shadow-[4px_4px_0px_var(--text)] transition-shadow duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)]">
                   <img 
                     src={getHeroImage(project.slug)} 
                     alt={project.title}

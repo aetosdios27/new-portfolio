@@ -46,15 +46,15 @@ export const skills = [
 
 export function SkillBadge({ name, Icon, className = "" }: { name: string, Icon: React.ElementType, className?: string }) {
   return (
-    <div 
-      className={`group flex justify-center items-center gap-2.5 px-3.5 py-2 border border-[var(--text)]/20 bg-[var(--bg)] transition-all duration-75 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[2px_2px_0px_var(--text),inset_0_0_0_1px_var(--text)] hover:border-[var(--text)] cursor-crosshair ${className}`}
+    <button 
+      className={`group flex justify-center items-center gap-2.5 px-3.5 py-2 border border-[var(--text)]/20 bg-[var(--bg)] transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[2px_2px_0px_var(--text),inset_0_0_0_1px_var(--text)] hover:border-[var(--text)] active:translate-x-0 active:translate-y-0 active:shadow-none cursor-crosshair ${className}`}
       style={{ fontFamily: "var(--font-geist-mono)" }}
     >
-      <Icon className="w-4 h-4 text-[var(--text)] transition-transform duration-75 group-hover:scale-125 group-hover:rotate-12" />
+      <Icon className="w-4 h-4 text-[var(--text)] transition-transform duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-125 group-hover:rotate-12" />
       <span className="text-[12px] tracking-widest text-[var(--text)]">
         {name.toLowerCase()}
       </span>
-    </div>
+    </button>
   );
 }
 

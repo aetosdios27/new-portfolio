@@ -62,14 +62,14 @@ export default async function Home() {
             
             <a 
               href="mailto:pushpendra@example.com" 
-              className="group relative flex items-center gap-3 px-5 py-2.5 border border-[var(--text)]/20 bg-[var(--bg)] transition-all duration-75 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[2px_2px_0px_var(--text),inset_0_0_0_1px_var(--text)] hover:border-[var(--text)] active:translate-x-0 active:translate-y-0 active:shadow-none no-underline"
+              className="group relative flex items-center gap-3 px-5 py-2.5 border border-[var(--text)]/20 bg-[var(--bg)] transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[2px_2px_0px_var(--text),inset_0_0_0_1px_var(--text)] hover:border-[var(--text)] active:translate-x-0 active:translate-y-0 active:shadow-none no-underline"
               style={{ fontFamily: "var(--font-geist-mono)" }}
             >
-              <span className="relative text-[13px] tracking-widest text-[var(--text)] transition-colors duration-75">
+              <span className="relative text-[13px] tracking-widest text-[var(--text)] transition-colors duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)]">
                 mail me
               </span>
               <div className="relative w-3 h-3 flex items-center justify-center">
-                <span className="text-[var(--text)] transition-all duration-75 text-[15px] group-hover:rotate-45">
+                <span className="text-[var(--text)] transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] text-[15px] group-hover:rotate-45">
                   ↗
                 </span>
               </div>

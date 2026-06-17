@@ -54,12 +54,12 @@ export function Hero() {
       </div>
 
       <div 
-        className="group relative w-28 h-28 border border-[var(--text)]/20 p-1 bg-[var(--bg)] shadow-[2px_2px_0px_var(--text)] transition-all duration-75 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none hover:border-[var(--text)] cursor-crosshair"
+        className="group relative w-28 h-28 border border-[var(--text)]/20 p-1 bg-[var(--bg)] shadow-[2px_2px_0px_var(--text)] transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none hover:border-[var(--text)] cursor-crosshair"
         onMouseEnter={() => setIsHoveringPfp(true)}
         onMouseLeave={() => setIsHoveringPfp(false)}
       >
         <AnimatePresence>
-          {isHoveringPfp && spotifyData && (spotifyData.isPlaying || spotifyData.isRecent) && (
+          {isHoveringPfp && (
             <SpotifyHoverCard data={spotifyData} />
           )}
         </AnimatePresence>
@@ -67,7 +67,7 @@ export function Hero() {
         <img 
           src="/pfp.jpg" 
           alt="aetos" 
-          className="w-full h-full object-cover grayscale mix-blend-luminosity transition-all duration-75 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-[1.02]"
+          className="w-full h-full object-cover grayscale mix-blend-luminosity transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-[1.02]"
         />
       </div>
     </div>
