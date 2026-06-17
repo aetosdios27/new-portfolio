@@ -2,7 +2,8 @@ import { getEntry, getEntries } from "@/lib/content";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { SkillBadge, skills } from "@/components/Skills";
+import { skills } from "@/lib/skills";
+import { SkillBadge } from "@/components/Skills";
 
 export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;

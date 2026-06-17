@@ -1,0 +1,45 @@
+import { 
+  SiRust, SiTypescript, SiGo, SiPostgresql, SiReact, SiNextdotjs, SiTauri, 
+  SiVulkan, SiRedis, SiNodedotjs, SiExpress, SiMongodb, SiPrisma, SiTailwindcss, 
+  SiFramer, SiGreensock, SiPython, SiCplusplus, SiGit, SiGithub, 
+  SiFigma, SiDocker, SiLinux, SiBun, SiShadcnui, SiSupabase, SiZod, SiTurborepo,
+  SiTrpc, SiAstro, SiSolidity
+} from "react-icons/si";
+import { GiBearFace } from "react-icons/gi";
+import { BsDatabase } from "react-icons/bs";
+
+export const skills = [
+  { name: "React", icon: SiReact },
+  { name: "Next.js", icon: SiNextdotjs },
+  { name: "TypeScript", icon: SiTypescript },
+  { name: "Node.js", icon: SiNodedotjs },
+  { name: "Bun", icon: SiBun },
+  { name: "Go", icon: SiGo },
+  { name: "Rust", icon: SiRust },
+  { name: "SQL", icon: BsDatabase },
+  { name: "PostgreSQL", icon: SiPostgresql },
+  { name: "MongoDB", icon: SiMongodb },
+  { name: "Supabase", icon: SiSupabase },
+  { name: "Redis", icon: SiRedis },
+  { name: "Prisma", icon: SiPrisma },
+  { name: "Zustand", icon: GiBearFace },
+  { name: "Tailwind", icon: SiTailwindcss },
+  { name: "shadcn/ui", icon: SiShadcnui },
+  { name: "Motion", icon: SiFramer },
+  { name: "GSAP", icon: SiGreensock },
+  { name: "Python", icon: SiPython },
+  { name: "C/C++", icon: SiCplusplus },
+  { name: "Express", icon: SiExpress },
+  { name: "Docker", icon: SiDocker },
+  { name: "Linux", icon: SiLinux },
+  { name: "Git", icon: SiGit },
+  { name: "GitHub", icon: SiGithub },
+  { name: "Figma", icon: SiFigma },
+  { name: "Tauri", icon: SiTauri },
+  { name: "Vulkan", icon: SiVulkan },
+  { name: "Zod", icon: SiZod },
+  { name: "Turborepo", icon: SiTurborepo },
+  { name: "tRPC", icon: SiTrpc },
+  { name: "Astro", icon: SiAstro },
+  { name: "Solidity", icon: SiSolidity },
+];
