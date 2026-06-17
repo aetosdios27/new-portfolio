@@ -13,7 +13,7 @@ This document serves as the local contextual brain for the `aetos` portfolio pro
   * Light Mode: Cream background (`#F5F0E8`), Wimbledon green text (`#1B5E20`), Glow (`#1B5E20`).
   * Dark Mode (Default): Matte black background (`#000000`), Clean white text (`#F0F0F0`), Glow (`#FFFFFF`).
   * *Implementation*: Controlled entirely via dynamic CSS variables (`var(--bg)`, `var(--text)`, `var(--glow)`).
-* **Interactions**: Standard CSS opacity fades are banned for major shifts. Theme transitions utilize a hardware-accelerated **View Transition API** radial flush (`850ms` cubic-bezier), giving the site a highly premium, cinematic feel.
+* **Interactions**: Standard CSS opacity fades are banned for major shifts. Theme transitions utilize a hardware-accelerated **View Transition API** radial flush (`850ms` cubic-bezier), giving the site a highly premium, cinematic feel. All micro-animations use `ease-[cubic-bezier(0.16,1,0.3,1)]` for a heavy, mechanical "hardware switch" feel.
 * **Scrollbars**: Hidden globally via webkit/ms-overflow overrides to maintain an unbroken canvas.
 
 ## 2. Frontend Design Ethos
@@ -25,22 +25,35 @@ This document serves as the local contextual brain for the `aetos` portfolio pro
 * **Iconography Law**: If a technology or feature does not have a scalable, recognizable vector icon, it does not belong in a visual ledger. "No icon, no mention."
 * **The Brick Wall Algorithm**: When rendering grids of variable-width items (like skill badges), achieve pixel-perfect flush vertical edges by applying `flex-grow` to the items within a `flex-wrap` container. This forces organic row staggering while maintaining strict outer geometric bounds.
 
-## 3. Vercel & React Architecture
+## 3. Component Architecture & Content Management
+* **MDX Content (`/content/projects/*.mdx`)**: All project data is stored statically in MDX. To add a new project, create a new file here. Ensure frontmatter includes `title`, `slug`, `year`, `tags`, and `status`. 
+* **FlightBoard (`FlightBoard.tsx`)**: The project ledger on the homepage. Projects are strictly sorted chronologically (descending) by year. On mobile, the expanded image is wrapped in a `<Link>` to act as a massive hit-target since the diagonal arrow is too small for fingers.
+* **SpotifyHoverCard (`SpotifyHoverCard.tsx` & `/api/spotify/route.ts`)**: Meticulously handles Spotify edge cases:
+  * Plays music: `[ NOW PLAYING ]`
+  * Paused but active context (200 OK, `song.item = null`): Forces a fallthrough to `getRecentlyPlayed()`
+  * Paused but track loaded (200 OK, `is_playing: false`): Forces `isRecent: true` -> `[ LAST PLAYED ]`
+  * Absolute silence (>3hrs): Mounts the Easter egg `[ SILENCE DETECTED ]` ("bro is locked in").
+  * *Mobile UX*: Uses a `useRef` and global document touch listener in `Hero.tsx` to dismiss the card when tapping outside, and absolute positions the card `right-0 top-full` to prevent horizontal scrolling on small viewports.
+
+## 4. Vercel & React Architecture
 * **Hydration Safety**: Client-only components that rely on browser APIs (like `react-github-calendar`) must be wrapped in a strict `mounted` state guard to prevent Next.js server-client hydration mismatches.
 * **Scripts**: Inline `<script>` tags in `layout.tsx` must use `next/script` with `strategy="beforeInteractive"` to align with React 19's streaming architecture.
+* **Server Components & Fetching**: 
+  * Route Handlers fetching external data with `cache: "no-store"` (like Spotify) MUST use `export const dynamic = "force-dynamic";` to prevent Next.js from throwing `DYNAMIC_SERVER_USAGE` errors at build time.
 * **Performance Imperatives**:
   * Eliminate waterfalls: check cheap conditions before awaiting, use `Promise.all` for parallel fetching.
   * Optimize rendering: Use `content-visibility` for long lists, extract static JSX, and avoid deriving state inside `useEffect` (derive during render).
 
-## 4. TypeScript Best Practices
+## 5. TypeScript Best Practices
 * **Configuration**: `strict: true`, `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes` are mandatory.
 * **Type-Level Engineering**: Use branded types for domain primitives (e.g., `type Brand<K, T>`) and avoid excessively deep conditional/recursive types to maintain compiler speed.
 * **Performance**: Utilize `skipLibCheck` and incremental builds to keep local development fast. Replace massive type intersections with simpler `interface` extensions.
 
-## 5. Development Directives & Mistake Log
+## 6. Development Directives & Mistake Log
 * **Named Exports**: The `react-activity-calendar` and `react-github-calendar` family of packages use *strictly named exports*. Never attempt to default-import them.
 * **Implementation Boundaries**: Never implement massive unprompted features or components based on cryptic requests (e.g., "check for X"). When in doubt, read the context to enrich existing architectural quality rather than constructing unapproved code.
-* **Tooling Priorities**: Ensure Next.js App Router rules are strictly followed (no raw script tags, proper client boundaries).
+* **Mobile Responsiveness**: Never "stack" (flex-col) brutalist components unless absolutely necessary. Scale down the elements instead to preserve the compact, side-by-side terminal aesthetic on small viewports.
+* **Build Command**: Always verify with `bun run build` before declaring a task complete. 
 
 ---
 *Note: This file replaces the deprecated `AGENTS.md` and serves as the single source of truth for the AI engineer operating in this repository.*
