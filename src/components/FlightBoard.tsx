@@ -147,13 +147,10 @@ export function FlightBoard({ projects }: FlightBoardProps) {
 
             {/* The Hidden Compartment (Viewport Slice) */}
             <div 
-              className="w-full overflow-hidden transition-all duration-100 ease-linear"
-              style={{
-                height: isHovered ? "240px" : "0px",
-                opacity: isHovered ? 1 : 0,
-              }}
+              className={`w-full grid transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isHovered ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
             >
-              <div className="p-4 pt-0 w-full h-full flex flex-col">
+              <div className="overflow-hidden min-h-0 w-full">
+                <div className="p-4 pt-0 w-full h-[240px] flex flex-col">
                 <div className="relative w-full h-full border border-[var(--text)]/20 bg-[var(--text)]/5 overflow-hidden group-hover:shadow-[4px_4px_0px_var(--text)] transition-shadow duration-75">
                   <img 
                     src={getHeroImage(project.slug)} 
@@ -170,6 +167,7 @@ export function FlightBoard({ projects }: FlightBoardProps) {
                         </span>
                       ))}
                     </div>
+                  </div>
                   </div>
                 </div>
               </div>
