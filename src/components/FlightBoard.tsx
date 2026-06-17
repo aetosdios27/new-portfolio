@@ -152,24 +152,28 @@ export function FlightBoard({ projects }: FlightBoardProps) {
             >
               <div className="overflow-hidden min-h-0 w-full">
                 <div className="p-4 pt-0 w-full h-[240px] flex flex-col">
-                <div className="relative w-full h-full border border-[var(--text)]/20 bg-[var(--text)]/5 overflow-hidden group-hover:shadow-[4px_4px_0px_var(--text)] transition-shadow duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)]">
-                  <img 
-                    src={getHeroImage(project.slug)} 
-                    alt={project.title}
-                    className="absolute inset-0 w-full h-full object-cover grayscale mix-blend-luminosity group-hover:grayscale-0 group-hover:mix-blend-normal transition-all duration-0"
-                  />
-                  
-                  {/* The Project Summary Ticker (Marquee) */}
-                  <div className="absolute bottom-0 left-0 w-full border-t border-[var(--text)]/20 bg-[var(--bg)]/90 backdrop-blur-sm overflow-hidden flex">
-                    <div className="whitespace-nowrap py-1.5 flex animate-[marquee_30s_linear_infinite]">
-                      {[...Array(4)].map((_, i) => (
-                        <span key={i} className="text-[9px] tracking-widest uppercase text-[var(--text)] mx-4">
-                          // {getProjectSummary(project.slug)} // 
-                        </span>
-                      ))}
+                  <Link 
+                    href={`/projects/${project.slug}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="relative block w-full h-full border border-[var(--text)]/20 bg-[var(--text)]/5 overflow-hidden group-hover:shadow-[4px_4px_0px_var(--text)] transition-shadow duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  >
+                    <img 
+                      src={getHeroImage(project.slug)} 
+                      alt={project.title}
+                      className="absolute inset-0 w-full h-full object-cover grayscale mix-blend-luminosity group-hover:grayscale-0 group-hover:mix-blend-normal transition-all duration-0"
+                    />
+                    
+                    {/* The Project Summary Ticker (Marquee) */}
+                    <div className="absolute bottom-0 left-0 w-full border-t border-[var(--text)]/20 bg-[var(--bg)]/90 backdrop-blur-sm overflow-hidden flex">
+                      <div className="whitespace-nowrap py-1.5 flex animate-[marquee_30s_linear_infinite]">
+                        {[...Array(4)].map((_, i) => (
+                          <span key={i} className="text-[9px] tracking-widest uppercase text-[var(--text)] mx-4">
+                            // {getProjectSummary(project.slug)} // 
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  </div>
+                  </Link>
                 </div>
               </div>
             </div>
