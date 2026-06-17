@@ -1,26 +1,70 @@
 "use client";
 
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef } from "react";
 
 export function useThock() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    // Preload the audio file on mount so there's zero latency
-    const audio = new Audio("/thock.wav");
-    audio.volume = 0.5; // Mellow it out slightly so it's creamy, not abrasive
-    audioRef.current = audio;
-  }, []);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   return useCallback(() => {
-    if (audioRef.current) {
-      // Clone the node to allow rapid overlapping rapid-fire clicks
-      const clone = audioRef.current.cloneNode() as HTMLAudioElement;
-      clone.volume = 0.4 + Math.random() * 0.2; // slight volume humanization
-      clone.preservesPitch = false; 
-      if ('mozPreservesPitch' in clone) (clone as any).mozPreservesPitch = false;
-      clone.playbackRate = 0.9 + Math.random() * 0.2; // pitch humanization for realism
-      clone.play().catch(() => {}); // catch and ignore if autoplay is blocked
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const t = ctx.currentTime;
+
+      // 1. The "Thump" (Low frequency resonance of the board)
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(150, t);
+      osc.frequency.exponentialRampToValueAtTime(40, t + 0.05); // pitch drop
+      
+      oscGain.gain.setValueAtTime(0, t);
+      oscGain.gain.linearRampToValueAtTime(0.8, t + 0.005);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08); // creamy fast fade
+
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+      
+      osc.start(t);
+      osc.stop(t + 0.1);
+
+      // 2. The "Click" (Plastic switch bottoming out)
+      const bufferSize = ctx.sampleRate * 0.02; // 20ms of noise
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1; // white noise
+      }
+      
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = "lowpass"; // muffle the click to make it creamy
+      noiseFilter.frequency.value = 1200; // roll off sharp highs
+      
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0, t);
+      noiseGain.gain.linearRampToValueAtTime(0.3, t + 0.002);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.02); // very fast plastic click
+
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      
+      noise.start(t);
+      
+    } catch (e) {
+      // Browser audio blocked or unsupported, silently fail
+      console.warn("Web Audio API not supported or blocked");
     }
   }, []);
 }
