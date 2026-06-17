@@ -1,0 +1,100 @@
+---
+title: "I didn't understand BitTorrent so I simulated it first"
+year: 2026
+tags: ["Distributed Systems", "Simulations", "Deep Dive"]
+brief: "as a kid i really wanted to play this famous game called halo ce... to truly grasp the algorithms, i decided to build a raw simulation in code."
+image: "/styx-banner.jpeg"
+project: "Styx"
+---
+
+as a kid i really wanted to play this famous game called halo ce, and at that time we didn't have fitgirl, etc. or atleast i hadn't heard of it, what we had was piratebay, savior of every kid's broke dreams to play games. so what we did was find the download with the highest seeders, put it in the queue in bittorrent or utorrent (if you are from that crowd) and put the download limit to unlimited and pray that the download be done asap.
+
+but now as a cs ug, i find the cat of curiosity playing around in my brain asking me, wtf was happening under the hood while we did what i just put as nostalgia in the first para.
+
+like how tf did piratebay know that the download i had chosen had 2847 seeders, who was counting, how did my bittorrent find those people, their IPs weren't in the `.torrent` file i had checked.
+
+so holy smokes...
+there is a system or whatever you wanna call it, that just knows which IP has which file, who is seeding it or not seeding it, and if they are seeding it, you just receive their IP? and whatever they are seeding.
+
+and side note for the record what the hell was up with "seeding" anyway like what are you even doing with that word. also why did my game download stall like a mfer at 99% giving me a heart attack so close to the finish line, wtf is going on here. but i digress.
+
+so as you can see, i was in a desert with no answers and only more piling up questions, and as it turns out as per my active research, each one of those tiny things was an individual ass system, that someone built from scratch (seriously y'all old cs dawgs massive respect).
+
+so what is the best way to understand a system...build it. but i went one step further (or backward as per your mind). simulate it...
+
+so our seeders are ready, the user is ready - 3.2.1. go... what could go wrong right?
+
+## the first clusterfuck
+well this is where you run into the first clusterfuck:
+- who to first request from
+- what to request from them
+- how to choose who is the first
+- how to choose what to request
+
+now you might say well obviously imma choose the guy from whom i can fetch the data the fastest and i wanna fetch the first piece for the download, so let's call it piece 1, ok genius then what.
+
+then you realize you are stuck with a choice, the piece number 2 that you want has 2800 seeders, whereas the piece 395 only has 3 seeders. which one do you take?
+
+piece 2, most people would think and yeah intuitively not wrong, but you'll run headfirst into another issue, or 2 issues to be exact. piece 2 is gonna be overcrowded af so download is gonna be hella slow. piece 395 by the time you make it there chances are its gone...poof.
+
+why you ask, why is it gone? well the people who had it turned off their systems and went to sleep, so while everybody was busy hogging the most famous piece, the rarest one vanished, and now you are staring at a download sitting at 99.99% unable to finish until one of those 2 guys comes back online.
+
+damn that is a massive problem what could be the solution to this issue? **choose the rarest piece first.**
+
+this does many things simultaneously:
+you get the most vulnerable piece first, now with comfort of mind go to the next most vulnerable piece. the most vulnerable piece who only had 2 seeders before will probably now have 4, then 8, then 16... it got distributed into the swarm, so that rarest piece is not so rare anymore.
+
+## the self-defeating prophecy
+but as it turns out - nothing is too far from a fuckup, and so wasn't this seemingly flawless elegant solution.
+
+the problem people ran into was that rarest-first is a collective decision, not an individual one. every single peer in the swarm runs the same algorithm at the same time. so when your client asks "what's the rarest piece right now" every other client is asking the exact same question and getting the exact same answer. piece 395. everybody wants piece 395. the 3 people who have it just got 400 simultaneous requests. they're cooked.
+
+and while the entire swarm is stampeding toward piece 395 - piece 521, which had 4 copies and was just sitting there minding its business, gets ignored. its seeders finish downloading, close their clients, go touch grass. now piece 521 has 2 copies.
+
+next round, the algorithm runs again. what's the rarest piece? piece 521 now. everybody charges piece 521. piece 634 gets ignored. its seeders leave.
+
+the algorithm is hunting rare pieces and accidentally killing the next one every single time. a self-defeating prophecy. the smarter every individual peer acts, the dumber the swarm behaves collectively.
+
+this is what researchers proved mathematically and what every BitTorrent client quietly ignored for twenty years.
+
+## the elegant fix: RFwPMS
+the fix, when it came, was almost insulting in its simplicity - don't always pick the rarest piece. pick it most of the time, but occasionally, randomly, pick the second or third rarest instead. that tiny injection of randomness breaks the stampede. peers diverge slightly. the herd never forms. the swarm stabilizes.
+
+this fix has a name. researchers called it **RFwPMS - Rarest First with Probabilistic Mode Suppression.** there's a paper. there's a mathematical proof. it works.
+
+qBittorrent didn't ship it. uTorrent didn't ship it. Transmission didn't ship it. the paper collected citations in academic obscurity while every client on the planet kept running the unstable version.
+
+twenty years.
+
+## proving it in code
+so how do you even verify that a fix like this actually works before you build the real thing?
+
+you can't use a single test for a swarm and call it a day, that won't have enough number cases to show the edge case issues. or make a real swarm, rent some servers, seed a file and let it rip, observe. but i am too broke for that, and also i don't wanna rely on a real network with conditions that i can't control, and if something goes wrong (tysm murphy's law &lt;3) you don't know who shat their pants your algo or aws. for the sake of copium imma say aws but regardless, you can't rewind and rerun with a diff seed and compare the outcomes, it happened and poof gone.
+
+so what do you do?
+you simulate it.
+
+not a fake simulation. not a toy. a statistically calibrated model of a real swarm - peer churn rates pulled from twenty years of academic BitTorrent measurement papers, session lifetimes drawn from actual Weibull distributions fitted to real data, piece availability curves that match what researchers measured on real torrents in 2005 and 2009 and 2014.
+
+you build a ghost of the system before the system exists. same emergent behavior. same failure modes. same collective dynamics. but fully deterministic — same seed, same parameters, identical output every single run. you can rewind. you can compare. you can break it deliberately and watch exactly how it breaks.
+
+so i built a fake swarm, a really good fake swarm might i add.
+
+## what does a fake swarm actually look like in practice?
+you write a program that pretends to be hundreds of peers at once. each one has a personality - some are fast uploaders, some are slow, some are on a bad connection and drop every third request, some stick around for the whole download, some close their client after 10 minutes and go touch grass. you give them a file split into pieces. you start a clock. every tick of the clock, every peer makes a decision - what piece do i need, who do i ask for it, is this peer worth talking to, do i stay or bail. the algorithm runs. the swarm evolves. pieces get rare, get distributed, get hoarded, disappear.
+
+and you record everything. obsessively. every request. every transfer. every peer that left and when. every piece and how many people had it at every moment in time.
+
+at the end you have four files sitting on disk. and those four files are dense enough to train three machine learning models, validate an algorithm that's been sitting in a research paper for twenty years, and tell you exactly how a real swarm behaves before you've written a single line of actual networking code.
+
+those four files are:
+- `peer_sessions.parquet` - basically a report card for every peer in the swarm. how long they stuck around, how much they actually contributed vs just vibing, and a quality score that answers the question "was this guy actually useful or was he just taking up a slot."
+- `block_events.parquet` - the receipt for every single exchange that happened. peer A asked peer B for piece 395 block 3 at tick 47, got it in 23ms, here's the bytes. the entire nervous system of the swarm, logged to disk.
+- `seeder_events.parquet` - the departure log. every seeder who left, when they left, how long they stayed. and here's a fun one - some seeders were still alive when the simulation ended, they didn't actually leave, we just stopped watching. those get flagged separately. turns out if you don't track that distinction your math breaks later in ways that are really annoying to debug.
+- `piece_snapshots.parquet` - scarcity over time. piece 395 had 3 owners at tick 0. by tick 20 it had 47 - rarest first worked. piece 521 dropped to 2 owners at tick 30 - the stampede found its next victim. you can watch the algorithm succeed and fail in slow motion.
+
+and here's what that actually looks like. same swarm, same seed, same peers. one run uses rarest-first. the other uses RFwPMS. the red line is pieces permanently lost from the swarm - gone, unrecoverable, the 99% stall in data form.
+
+![swarm stability: rarest-first vs RFwPMS](/bittorrent-chart.jpg)
+
+so well, that was it, hope u enjoyed the blog &lt;3

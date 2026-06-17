@@ -1,23 +1,52 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --animate-marquee: marquee 20s linear infinite;
+  
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+}
 :root {
   --bg: #F5F0E8;
   --text: #1B5E20;
   --glow: #1B5E20;
+  --live-badge: var(--text);
 }
 
 .dark {
   --bg: #000000;
   --text: #F0F0F0;
   --glow: #FFFFFF;
+  --live-badge: #00FF00;
+}
+
+html span[style*="--shiki-light"] {
+  color: var(--shiki-light) !important;
+}
+
+html.dark span[style*="--shiki-dark"] {
+  color: var(--shiki-dark) !important;
 }
 
 html {
   background-color: var(--bg);
   color: var(--text);
+}
+
+::selection {
+  background-color: var(--text);
+  color: var(--bg);
+}
+
+::-moz-selection {
+  background-color: var(--text);
+  color: var(--bg);
 }
 
 ::view-transition-old(root),
@@ -38,4 +67,20 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
 }

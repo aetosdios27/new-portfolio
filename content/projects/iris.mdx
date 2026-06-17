@@ -1,18 +1,11 @@
 ---
 title: "Iris"
 slug: "iris"
-year: 2023
-tags: ["Rust","Vulkan (ash)","DMA-BUF","GTK 4.14"]
+year: 2026
+tags: ["Rust","Vulkan"]
+status: "building"
 links:
-  deploy: "https://iris-landing-page-tan.vercel.app"
+  waitlist: "https://iris-landing-page-tan.vercel.app"
 ---
 
-Zero-Copy GPU Image Viewer
-
-// bullet
-
-Built a zero-CPU-copy image display pipeline on Linux using raw Vulkan external memory (ash) and DMA-BUF, eliminating all host-side pixel transfers in the hot path.
-
-// bullet
-
-Reconstructed the rendering backend from wgpu to raw Vulkan after identifying ownership model incompatibilities with external memory handles.
+A zero-copy, GPU-accelerated image viewer for Linux written in Rust. By reconstructing the rendering backend from wgpu to raw Vulkan (ash), Iris bypasses high-level abstractions to communicate directly with the Wayland compositor via DMA-BUF. This architectural bet eliminates all host-side pixel transfers in the hot path, achieving true zero-CPU-copy data transfer for blistering speed and extreme hardware efficiency.

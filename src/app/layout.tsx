@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { GeistMono } from "geist/font/mono";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavPanel } from "@/components/NavPanel";
+import { Ticker } from "@/components/Ticker";
+import { LenisProvider } from "@/components/LenisProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -32,12 +34,15 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={GeistMono.variable}>
-        <ThemeToggle />
-        <div className="fixed top-12 left-0 w-full flex justify-center z-40">
-          <NavPanel />
-        </div>
-        {children}
+      <body className={`${GeistMono.variable} pb-10`}>
+        <LenisProvider>
+          <ThemeToggle />
+          <div className="fixed top-0 left-0 w-full flex justify-center z-40 bg-[var(--bg)] py-8 border-b border-[var(--text)]/10">
+            <NavPanel />
+          </div>
+          {children}
+          <Ticker />
+        </LenisProvider>
       </body>
     </html>
   );

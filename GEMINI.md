@@ -18,6 +18,10 @@ This document serves as the local contextual brain for the `aetos` portfolio pro
 * **Zero Generic AI Aesthetics**: Avoid overused fonts (Inter, Roboto), predictable gradient meshes, and typical "startup" layouts.
 * **Typography & Composition**: Use severe, characteristic fonts (like Geist Mono). Embrace asymmetry, generous negative space, and controlled density over generic symmetry.
 * **Execution**: Every component must feel meticulously engineered. Minimalism derives its power from pixel-perfect execution, not a lack of effort.
+* **Micro-Interactions**: Bouncy spring physics, generic color flushes, and slow opacity fades are strictly banned. Use severe, mechanical interactions (e.g., `-translate-x-[2px] -translate-y-[2px]` paired with an unblurred drop shadow `shadow-[2px_2px_0px_var(--text)]` and inset crushes) running on harsh timing curves (`duration-75`) to mimic physical hardware switches.
+  * *Exception (Kinetic Typography)*: The user explicitly authorized a physics-based, continuous `skewX` wave animation ("ruffling grass") on the subheadings. This introduces a fluid, organic motion to act as a "life in a machine" poetic contrast against the otherwise rigid brutalist matrix.
+* **Iconography Law**: If a technology or feature does not have a scalable, recognizable vector icon, it does not belong in a visual ledger. "No icon, no mention."
+* **The Brick Wall Algorithm**: When rendering grids of variable-width items (like skill badges), achieve pixel-perfect flush vertical edges by applying `flex-grow` to the items within a `flex-wrap` container. This forces organic row staggering while maintaining strict outer geometric bounds.
 
 ## 3. Vercel & React Architecture
 * **Hydration Safety**: Client-only components that rely on browser APIs (like `react-github-calendar`) must be wrapped in a strict `mounted` state guard to prevent Next.js server-client hydration mismatches.

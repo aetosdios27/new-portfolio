@@ -1,0 +1,242 @@
+---
+title: "Building WebNotes: The Whole Story So Far"
+year: 2025
+tags: ["Case Study", "Product Engineering", "Lessons Learned"]
+brief: "hey, aetos here. over the last month or two you must've seen me talk abt WebNotes a lot... this blog dives into the how, the why, and the technical details of building WebNotes."
+image: "/wn-banner.jpeg"
+project: "WebNotes"
+---
+
+hey, aetos here
+over the last month or two you must've seen me talk abt WebNotes a lot - if not then i seriously need to work on my promotional skills asap TT
+
+anyways this blog dives into the how, the why, and the technical details of building WebNotes. i don't really have a goal with how long this is gonna be but i hope you have fun reading it (and maybe learn something, or at least feel less alone in the "i have too many note apps" struggle)
+
+## the spark
+i've always been a huge note taker. like obsessively so.
+
+i've maintained tons of diaries pretty religiously, i was an ardent notion fan even back when it barely had features, i was right there watching obsidian take off and go mainstream - immediately installing it and spending hours figuring out how the damn platform worked
+
+tldr: if there's a note-taking app out there, i've probably tried it. there isn't a single method to document your thoughts - online or offline - that i haven't explored at some point.
+
+which is exactly why i could see the pain points so clearly, at least for myself:
+
+## the problems that drove me insane
+ecosystem lock-in - switched to apple and suddenly half my notes were inaccessible
+
+too much friction everywhere:
+
+- **notion**: no one is taking quick daily notes there anymore. the app's evolved too far past that - it's a database tool pretending to be a note app now
+- **obsidian**: it's a power user's app and always will be. plus it stores everything locally in its own directory for privacy reasons which is great if you're paranoid abt data privacy but kinda sucks if you just want your notes available everywhere without thinking abt it
+- **default "notes" apps**: you mean the ones on phones? yeah good luck accessing them on your tablet or laptop unless you're deep in apple's or google's ecosystem. it's genuinely sad that in 2024 we're still dealing with this
+
+so a goal formed in my mind, born out of all these tiny frustrations:
+
+build an ecosystem-agnostic, web-based (accessible anywhere), open-source note-taking app that doesn't try to do everything - just does a few things really fucking well.
+
+i was and still am obsessed with delivering on that promise.
+
+## the vision (or really, the anti-vision)
+> "Simplicity is the ultimate sophistication." 
+> ~ Jony Ive
+
+i've always loved this quote. it's so important for anyone building anything today to internalize this:
+
+**don't bloat your app.**
+seriously. don't.
+
+as a user, power features are nice - but there's a fine line between "feature-rich" and "confusing nightmare to navigate" and most apps don't just cross that line, they sprint past it at full speed.
+
+this quote and my personal experiences became my north star. it didn't matter that i hadn't figured out how to build WebNotes yet - i knew exactly what i didn't want it to be.
+
+### what i deliberately left out:
+- no AI writing assistant (every app has one now, it's bloat)
+- no databases or tables (that's notion's job)
+- no plugins marketplace (looking at you obsidian)
+- no social features
+- no "workspaces" or "teams"
+
+just notes. folders. markdown. search. that's it.
+
+## figuring out the how
+now that i knew what not to build, deciding on actual features was weirdly easier.
+
+i wanted the layout simple - apple notes was a huge inspiration: collapsible sidebar, folder list, note list, editor area. basics sorted.
+
+### picking the tech stack
+honestly? i didn't know shit.
+
+look, don't judge me like that - i had a vision and passion and chatgpt (which i love dearly). but here's the thing: i didn't just blindly copy-paste what AI told me. i researched each suggestion, read docs, checked github stars, looked at what production apps were using.
+
+the stack i landed on:
+
+**frontend:**
+- **Next.js 15** - server components, app router, the whole nine yards
+- **TypeScript** - because i'm not a psychopath who wants runtime errors
+- **TailwindCSS** - utility-first styling, fast af to iterate with
+- **TipTap** - for the editor
+
+**backend:**
+- **Prisma** - ORM that doesn't make me want to cry
+- **PostgreSQL** - needed relational data (users → folders → notes)
+- **NextAuth.js** - handled auth without me building it from scratch
+
+## making the road - august 2025
+uni fucked up my potential otherwise would’ve shipped it way sooner
+
+### august 27-29: the mvp sprint begins
+started with the absolute basics. got the initial mvp commit up on august 27th and immediately ran into vercel deployment issues. classic.
+
+the first 48 hours:
+- fixed vercel error 2.0 (some config issue)
+- fixed vercel error 2.1 (had to wrap params in a promise - next.js 15 thing)
+- added postgresql database
+- realized notes were losing content when creating new ones - fixed that real quick
+- made note titles save based on typed content automatically
+
+then the real work began: folder support. this took way longer than expected because i had to:
+- add backend logic for folders
+- create the sidebar component
+- make everything work together without breaking existing notes
+
+by aug 29th i had folders working but they were basic af - just containers for notes, no fancy features yet.
+
+## september - the ui/ux grind
+
+### sep 2-5: making it feel like a real app
+- **sep 2**: added icons in the sidebar for adding notes/folders/search. made the sidebar smoothly collapsible (this took forever to get the animation right)
+- **sep 5**: deployment hell continued
+  - changed package.json to run prisma generate during build (kept forgetting this)
+  - aligned data types with prisma schema (typescript was screaming at me)
+  - added the core editing features: bold/italic/strikethrough formatting
+  - integrated auth properly with the UI
+
+### sep 6-7: the polish phase
+- **sep 6**: added loading skeletons everywhere - the app felt 10x faster even though nothing actually changed performance-wise
+- **sep 7**: this was a big day
+  - made folders actually functional with drag-and-drop (using `@dnd-kit`)
+  - added framer motion animations for adding/deleting notes and folders
+  - fixed bullet/numbered lists not appearing in the editor (tiptap config issue)
+  - made the toolbar turn yellow when text is selected (small detail but it matters)
+
+### sep 9-12: the "oh shit people might actually use this" phase
+- **sep 10**: implemented optimistic UI for all core actions - create/update/delete felt instant now even with network latency
+- **sep 11**: added context menus (right-click) for renaming/deleting folders and notes. also fixed the user avatar menu to actually include a sign out button (how did i forget that?)
+- **sep 12**: the game changer - guest mode. non-authenticated users could now use the app offline. stored everything in localStorage. this opened up the app to way more people who just wanted to try it without signing up.
+
+### sep 15: the sync nightmare
+spent the entire day fixing syncing issues:
+- editor was flickering when typing fast
+- cross-session note sync was broken (open in two tabs = chaos)
+- title autofocus kept stealing focus at the wrong times
+- toolbar kept repositioning randomly
+
+fixed all of it. worst day of the project so far but most important fixes.
+
+## october-november: feature creep (but the good kind)
+
+### october 15: pinned notes
+added note pinning with optimistic updates. seems simple but the ui logic for keeping pinned notes at the top while maintaining sort order for unpinned notes was surprisingly complex.
+
+### november 3-4: the command palette update
+**nov 3:**
+- added full markdown support (not just the toolbar buttons)
+- implemented slash commands (type / to see options)
+- built a command palette (cmd+k opens it)
+- fixed mobile sidebar visibility issues
+
+**nov 4:**
+- added welcome notes for new users (onboarding basically)
+- better loading states everywhere
+- fixed a ton of keyboard shortcut conflicts
+- command palette improvements based on early feedback
+
+### november 10: share as pdf
+just shipped this - users can now export their notes as PDFs with syntax highlighting for code blocks. used puppeteer for generation, been working on this for a week straight.
+
+## the technical potholes (and how i filled them)
+
+**the "why are my notes disappearing" bug**
+- **when**: august 28
+- **the bug**: create a new note, type something, click another note, come back - empty.
+- **the cause**: i was creating the note in the database but not updating the local state correctly
+- **the fix**: proper state management with react query for caching
+
+**the "vercel hates me" saga**
+- **when**: august 27-29, september 5, november 3
+- **the bug**: constant deployment failures
+- **the causes**: forgot to run prisma generate in build step, type mismatches between dev and prod, environment variables not loading
+- **the fix**: proper build pipeline, type checking in CI, better env var management
+
+**the "sync from hell" incident**
+- **when**: september 15
+- **the bug**: open the app in two tabs, type in one, watch chaos in the other
+- **the cause**: no real-time sync, just polling every 30 seconds (bad idea)
+- **the fix**: implemented proper optimistic updates + faster sync intervals + conflict resolution
+
+**the "mobile safari strikes again" problem**
+- **when**: november 3
+- **the bug**: sidebar wouldn't show on mobile, toolbar covered by keyboard
+- **the fix**: visualViewport API + css variables for dynamic viewport height
+
+## what's already fucking done
+before we talk about the future, let's be real about what WebNotes already has:
+- **dark mode** - not just any dark mode, the black and yellow apple notes aesthetic that actually looks good
+- **global search** - cmd+k opens command palette with full-text search across everything
+- **local-first sync** - works offline, syncs when online, no data loss ever
+- **guest mode** - use it without even signing up
+- **drag-and-drop folders** - organize however you want
+- **markdown support** - with live preview
+- **slash commands** - type / for quick formatting
+- **pdf export** - with syntax highlighting for code blocks
+- **optimistic ui** - everything feels instant
+- **context menus** - right-click everything
+- **keyboard shortcuts** - for power users
+- **responsive design** - works on mobile browsers already
+
+## what's next for WebNotes
+
+### stuff i can ship soon (already know how to build it)
+- note templates - for meeting notes, daily journals, code snippets
+- note linking - `[[wiki-style]]` brackets with backlink tracking
+- block references - embed parts of one note in another
+- version history - time machine for your notes
+- published notes - share notes with a public link
+- better code blocks - language detection, copy button, line numbers
+- export options - markdown files, json backup, html
+- keyboard navigation - navigate entirely without mouse
+- custom themes - let users tweak colors/fonts
+
+### stuff i wanna learn to build (the fun challenges)
+- mobile apps - react native or flutter, need to learn mobile dev properly
+- multiplayer editing - CRDTs or operational transforms, real-time sync
+- cli tool - never built a proper cli before
+- code execution - sandboxed environments, docker maybe?
+- webhooks - event system architecture
+- plugins system - secure sandboxing, plugin marketplace
+- e2e encryption - for the privacy folks
+- self-hosting option - docker image, one-click deploy
+- ai features - but only if i find a use case that isn't bullshit
+
+### still never doing
+- ai writing assistant (every app has this, it's boring)
+- social features (not everything needs to be social)
+- paywalls (donations maybe, forced payments never)
+- selling user data (obviously)
+- blockchain anything (just no)
+
+## the real lessons learned
+- **optimistic ui is non-negotiable** - makes everything feel instant
+- **guest mode was crucial** - lower the barrier to entry as much as possible
+- **sync is harder than you think** - seriously, budget 3x the time
+- **users notice tiny details** - that yellow toolbar on text selection? people love it
+- **ship broken, fix quickly** - perfectionism would've killed this project
+
+## try it yourself
+WebNotes is live and open source. it's not perfect but it works and it's mine.
+
+if you're a developer, PRs are welcome. if you're a user, feedback is welcome. if you just wanna see the code and judge my decisions, that's cool too.
+
+thanks for reading this far. now go take some notes or something.
+
+~ aetos

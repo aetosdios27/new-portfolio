@@ -11,6 +11,8 @@ export type Entry = {
   accent?: string;
   status?: string;
   links?: Record<string, string>;
+  image?: string;
+  project?: string;
   body: string;
 };
 
@@ -29,6 +31,7 @@ export function getEntries(kind: "projects" | "blog"): Entry[] {
 
 export function getEntry(kind: "projects" | "blog", slug: string): Entry | undefined {
   const file = path.join(contentRoot, kind, `${slug}.mdx`);
+  console.log("[DEBUG] getEntry looking for:", file);
   if (!fs.existsSync(file)) return undefined;
   return readEntry(kind, slug);
 }
@@ -46,6 +49,8 @@ function readEntry(kind: "projects" | "blog", slug: string): Entry {
     accent: parsed.data.accent ? String(parsed.data.accent) : undefined,
     status: parsed.data.status ? String(parsed.data.status) : undefined,
     links: parsed.data.links as Record<string, string> | undefined,
+    image: parsed.data.image ? String(parsed.data.image) : undefined,
+    project: parsed.data.project ? String(parsed.data.project) : undefined,
     body: parsed.content.trim(),
   };
 }

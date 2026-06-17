@@ -1,22 +1,11 @@
 ---
 title: "Styx"
 slug: "styx"
-year: 2024
-tags: ["Rust","Tokio","Tauri v2","React","LightGBM","ONNX Runtime"]
+year: 2026
+tags: ["Rust", "Tauri", "Python"]
+status: "building"
 links:
-  deploy: "https://github.com/aetosdios27/Styx"
+  github: "https://github.com/aetosdios27/Styx"
 ---
 
-Production-Grade BitTorrent Client
-
-// bullet
-
-Designed a multi-crate Rust monorepo targeting BitTorrent v2 with SHA-256 Merkle trees and ephemeral peer IDs for privacy by construction.
-
-// bullet
-
-Built a swarm simulation engine with statistical verification of peer selection strategies across multiple test scenarios.
-
-// bullet
-
-Integrated LightGBM + PyTorch models via ONNX Runtime for adaptive peer throttling prediction without runtime Python dependencies.
+A Tier 3 production-grade BitTorrent client built v2-native (BEP 52) from day one. Engineered as a multi-crate Rust monorepo for uncompromising privacy, Styx ships with SHA-256 Merkle trees, ephemeral peer IDs, and an embedded ML pipeline (LightGBM + PyTorch via ONNX Runtime) for adaptive peer throttling prediction without runtime Python dependencies. The entire engine is compiled into a single Rust binary, featuring both a Tauri GUI and a ratatui TUI for extreme operational flexibility.

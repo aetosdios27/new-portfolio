@@ -2,34 +2,70 @@ import { getEntry, getEntries } from "@/lib/content";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { MDXRemote } from "next-mdx-remote/rsc";
+import rehypePrettyCode from "rehype-pretty-code";
+import { CodeBlock } from "@/components/CodeBlock";
+import { CopyForLLM } from "@/components/CopyForLLM";
 
-export function generateStaticParams() {
-  return getEntries("blog").map((p) => ({ slug: p.slug }));
-}
+import { TocRail } from "@/components/TocRail";
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = getEntry("blog", params.slug);
+const createHeading = (level: number) => ({ children }: any) => {
+  const text = Array.isArray(children) ? children.join('') : children;
+  const slug = text.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '');
+  const Tag = `h${level}` as any;
+  return <Tag id={slug} className="scroll-mt-32">{children}</Tag>;
+};
+
+const components = {
+  pre: CodeBlock,
+  h2: createHeading(2),
+  h3: createHeading(3),
+};
+
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params;
+  console.log("RESOLVED SLUG:", resolvedParams.slug);
+  const post = getEntry("blog", resolvedParams.slug);
+  console.log("POST FOUND?:", !!post);
   
   if (!post) notFound();
 
-  // Parse body for standard markdown-style paragraphs
-  const paragraphs = post.body.split(/\n\n+/).filter(Boolean);
+  // Extract headings for TOC
+  const headings = Array.from(post.body.matchAll(/^(#{2,3})\s+(.+)$/gm)).map(match => {
+    const level = match[1].length;
+    const text = match[2].trim();
+    const slug = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '');
+    return { text, slug, level };
+  });
     
   return (
     <main className="min-h-svh flex flex-col pt-32 pb-32">
-      <div className="flex flex-col w-full max-w-[640px] mx-auto px-6 lg:px-0">
+      <div className="relative flex flex-col w-full max-w-[640px] mx-auto px-6 lg:px-0">
         <Link href="/blog" className="text-sm opacity-50 hover:opacity-100 no-underline mb-12 flex items-center gap-2 w-fit">
-          <ArrowLeft size={14} /> back to log
+          <ArrowLeft size={14} /> back to blogs
         </Link>
+
+        {/* TOC Rail */}
+        <div className="hidden xl:block absolute top-0 left-[calc(100%+5rem)] w-64 h-full pointer-events-none">
+          <div className="sticky top-32 pointer-events-auto max-h-[calc(100vh-10rem)] overflow-y-auto pb-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <TocRail headings={headings} />
+          </div>
+        </div>
         
         <div style={{ viewTransitionName: `blog-${post.slug}` }}>
-          <div className="flex justify-between items-baseline mb-4">
-            <h1 className="text-2xl font-bold">{post.title}</h1>
-            {(post.date ?? post.year) && (
-              <span className="text-sm opacity-50 font-mono">
-                {post.date ?? post.year}
-              </span>
-            )}
+          {post.image && (
+            <div className="w-full aspect-[21/9] border border-[var(--text)]/20 mb-8 overflow-hidden relative bg-[var(--bg)]">
+              <img 
+                src={post.image} 
+                alt={`${post.title} hero image`}
+                className="w-full h-full object-cover opacity-90"
+              />
+              <div className="absolute inset-0 bg-[var(--text)] mix-blend-color pointer-events-none"></div>
+            </div>
+          )}
+          <div className="flex flex-col gap-6 mb-10">
+            <h1 className="text-[28px] leading-tight font-bold tracking-tight max-w-[90%]">{post.title}</h1>
+            <CopyForLLM post={post} />
           </div>
           
           {post.tags && post.tags.length > 0 && (
@@ -42,37 +78,42 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
             </div>
           )}
           
-          <div className="space-y-8 leading-relaxed text-[15px]">
-            {paragraphs.map((paragraph, idx) => {
-              if (paragraph.startsWith('##')) {
-                return (
-                  <h2 key={idx} className="text-lg font-bold mt-12 mb-4">
-                    {paragraph.replace(/^##\s+/, '')}
-                  </h2>
-                );
-              }
-              if (paragraph.startsWith('###')) {
-                return (
-                  <h3 key={idx} className="text-sm font-bold opacity-50 mt-8 mb-2" style={{ fontFamily: "var(--font-geist-mono)" }}>
-                    {paragraph.replace(/^###\s+/, '')}
-                  </h3>
-                );
-              }
-              return (
-                <p key={idx} className="leading-relaxed">
-                  {paragraph}
-                </p>
-              );
-            })}
-          </div>
+          <article className="prose max-w-none text-[15px] leading-relaxed prose-p:text-[var(--text)] prose-headings:text-[var(--text)] prose-headings:font-bold prose-headings:tracking-tight prose-a:text-[var(--text)] prose-a:underline-offset-4 hover:prose-a:opacity-70 prose-strong:text-[var(--text)] prose-blockquote:border-l-[var(--text)] prose-blockquote:text-[var(--text)] prose-blockquote:opacity-80 prose-hr:border-[var(--text)]/20 prose-li:text-[var(--text)] prose-ul:text-[var(--text)] prose-img:border prose-img:border-[var(--text)]/20 prose-img:w-full [&_:not(pre)>code]:bg-[var(--text)] [&_:not(pre)>code]:text-[var(--bg)] [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:before:content-none [&_:not(pre)>code]:after:content-none">
+            <MDXRemote 
+              source={post.body} 
+              components={components}
+              options={{
+                mdxOptions: {
+                  rehypePlugins: [
+                    [
+                      rehypePrettyCode,
+                      {
+                        theme: {
+                          light: "vitesse-light",
+                          dark: "vitesse-dark"
+                        },
+                        keepBackground: false,
+                        defaultLang: {
+                          block: "plaintext"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }}
+            />
+          </article>
           
           {post.links && (
-            <div className="mt-20 pt-8 border-t border-[var(--text)]/20">
-              <h3 className="text-xs font-bold opacity-50 mb-4 tracking-widest" style={{ fontFamily: "var(--font-geist-mono)" }}>[ LINKS ]</h3>
-              <div className="flex flex-col gap-3">
+            <div className="mt-24 pt-12 border-t border-[var(--text)]/20">
+              <h3 className="text-xs font-bold opacity-50 mb-8 tracking-widest" style={{ fontFamily: "var(--font-geist-mono)" }}>[ ASSOCIATED LINKS ]</h3>
+              <div className="flex flex-col gap-4">
                 {Object.entries(post.links).map(([label, href]) => (
-                  <a key={label} href={href as string} target="_blank" rel="noopener noreferrer" className="no-underline hover:opacity-70 flex items-center gap-3 text-sm">
-                    <span className="opacity-50 font-mono">-&gt;</span> {label}
+                  <a key={label} href={href as string} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-between p-5 border border-[var(--text)]/20 hover:bg-[var(--text)] hover:text-[var(--bg)] transition-colors duration-200 no-underline">
+                    <span className="font-bold tracking-tight text-[15px]">{label}</span>
+                    <span className="font-mono text-[13px] opacity-50 group-hover:opacity-100 group-hover:text-[var(--bg)] transition-transform duration-200 transform group-hover:translate-x-1">
+                      -&gt;
+                    </span>
                   </a>
                 ))}
               </div>

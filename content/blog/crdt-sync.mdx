@@ -1,0 +1,513 @@
+---
+title: "I Built Stateless CRDT Sync on Vercel Serverless Functions"
+year: 2025
+tags: ["Architecture", "Serverless", "Local-First"]
+brief: "How a broke university sophomore achieved conflict-free sync without paying for a single server... and the horrifying bug that almost made me quit."
+image: "/crdt-banner.jpeg"
+project: "WebNotes"
+links:
+  "Try WebNotes": "https://web-notes-lyart.vercel.app"
+  "Star on GitHub": "https://github.com/aetosdios27/WebNotes"
+---
+
+How a broke university sophomore achieved conflict-free sync without paying for a single server.
+
+Every note-taking app forces you to pick a side.
+
+You can have simple and fast - Apple Notes, Notepad. But then you're locked to one platform, one device, no real features.
+
+You can have powerful and complex - Obsidian, Emacs. But then you're staring at a learning curve steeper than your tuition fees, and the UI looks like it was designed during the Cold War.
+
+You can have collaborative and slow - Notion. But then you're shipping 300MB of Chromium to write a grocery list, and god help you if your internet drops.
+
+I wanted all three. Fast, powerful, and synced. So I built it.
+
+WebNotes is a cross-platform note-taking app with:
+- A TipTap/ProseMirror rich text editor with slash commands, LaTeX math, bidirectional linking, tables, and code blocks
+- A Tauri (Rust) desktop binary under 10MB
+- A Next.js web client
+- SQLite for local storage, PostgreSQL for cloud
+- Version history with visual diffs
+- And the thing this post is actually about: **conflict-free CRDT synchronization running on stateless serverless functions with zero infrastructure cost**
+
+That last part is the one that makes people squint. So let me explain how it works, why it works, and the horrifying bug that almost made me quit.
+
+## The Problem: Sync Is Expensive
+If you want two devices to edit the same document and not lose data, you need conflict resolution. There are two mainstream approaches:
+
+1. **Operational Transformation (OT)** - what Google Docs uses. Every keystroke becomes an operation. A central server transforms operations against each other to maintain consistency. It works, but it requires a persistent, stateful server that remembers every connected client and their operation history. Google runs thousands of these servers. You and I cannot afford this.
+2. **CRDTs (Conflict-free Replicated Data Types)** - what Figma uses (sort of). The data structure itself is designed so that any two copies can be merged without conflicts, regardless of the order operations arrive. No central coordinator needed. The math guarantees convergence.
+
+CRDTs are the obvious choice for an indie developer. The most popular implementation for text editing is Yjs - a high-performance CRDT library that integrates directly with editors like TipTap, ProseMirror, CodeMirror, and Monaco.
+
+But here's the catch.
+
+The standard way to use Yjs for sync is `y-websocket` - a WebSocket server that keeps connections open between clients, relays document updates in real-time, and stores state. You run it on a VPS, a Docker container, or a managed service like Liveblocks.
+
+All of these approaches cost money at some point. Liveblocks offers a free tier for prototyping and small apps, but its paid plans start at around $30/month once you exceed free limits. If you self-host instead, a basic VPS typically costs $5–$20/month, sometimes more depending on region and specs. On top of that, you're responsible for keeping the server running 24/7, handling reconnections, managing memory and state, and scaling the system as usage grows beyond a small number of concurrent users.
+
+I'm a 4th semester CS undergrad. I deploy on Vercel's free tier. My budget for sync infrastructure is exactly $0/month.
+
+So I asked a question that I couldn't find anyone else asking:
+*What if I just... didn't use WebSockets at all?*
+
+## The Insight: You Don't Need Real-Time
+Here's the thing about a personal note-taking app: you're not Google Docs. You don't have 30 people typing in the same document simultaneously. The typical use case is:
+
+1. You write a note on your laptop
+2. You close the laptop
+3. You open the note on your phone
+4. The note is there
+
+That's it. That's the sync requirement. The gap between step 2 and step 3 is minutes to hours, not milliseconds. You don't need a persistent WebSocket connection keeping two cursors in sync. You need eventual consistency - the guarantee that all devices will converge to the same state, even if they were offline when edits happened.
+
+And CRDTs give you exactly that, by definition. The merge is baked into the data structure. You just need a way to get the data from point A to point B.
+
+What's the simplest way to move data between a client and a server?
+An HTTP POST request.
+
+## The Architecture: Stateless Merge on Serverless
+Here's the entire sync flow: 
+
+![WebNotes Sync Flow](/vn-syncflow.jpg)
+
+### Why CRDTs Make This Possible
+The magic is in step 5. When the serverless function creates a `Y.Doc`, loads the database state into it, and then applies the client's update - Yjs automatically merges them. That's what CRDTs do. It doesn't matter if the client was offline for a day. It doesn't matter if three different devices all sent updates with conflicting edits. The merge is deterministic and conflict-free.
+
+Here's the actual server code:
+
+```typescript
+sync: protectedProcedure
+  .input(z.object({
+    id: z.string(),
+    update: z.string(), // Base64 encoded Yjs state
+  }))
+  .mutation(async ({ ctx, input }) => {
+    // 1. Load existing state from database
+    const note = await ctx.prisma.note.findFirst({
+      where: { id: input.id, userId: ctx.userId },
+      select: { yjsState: true },
+    });
+
+    if (!note) throw new TRPCError({ code: "NOT_FOUND" });
+
+    // 2. Create a Y.Doc and load the DB state
+    const mergedDoc = new Y.Doc();
+    if (note.yjsState) {
+      Y.applyUpdate(mergedDoc, new Uint8Array(note.yjsState));
+    }
+
+    // 3. Apply the client's update — Yjs merges automatically
+    const incomingUpdate = Buffer.from(input.update, "base64");
+    Y.applyUpdate(mergedDoc, new Uint8Array(incomingUpdate));
+
+    // 4. Save the merged state back
+    const newState = Buffer.from(Y.encodeStateAsUpdate(mergedDoc));
+    mergedDoc.destroy();
+
+    await ctx.prisma.note.update({
+      where: { id: input.id },
+      data: { yjsState: newState, updatedAt: new Date() },
+    });
+
+    return { success: true };
+  }),
+```
+
+That's 25 lines. That's the entire sync engine. No WebSocket server. No connection management. No pub/sub. The function spins up, merges, saves, and dies. Vercel bills me $0 because it runs for less than a second per request and I'm well within the free tier.
+
+## The Client Side: One Y.Doc Per Note
+On the frontend, the editor uses TipTap with the Yjs Collaboration extension. The critical architectural decision: each note gets its own `Y.Doc` instance, and switching notes means destroying the old editor and creating a new one.
+
+This sounds obvious. It wasn't.
+
+My first implementation tried to reuse a single `Y.Doc` and clear it when switching notes. This caused content from Note A to bleed into Note B because the Collaboration extension binds to a specific XML fragment inside the `Y.Doc`, and "clearing" a CRDT document doesn't work the way you think it does. CRDTs are append-only. You can't truly erase history. You can only create new history.
+
+The fix was React's `key` prop - the most underrated tool in the framework:
+
+```typescript
+// Outer shell — handles note switching
+export default function NoteEditor({ activeNote, ...props }) {
+  return (
+    <InnerEditor
+      key={activeNote.id}  // Forces complete unmount/remount
+      noteId={activeNote.id}
+      {...props}
+    />
+  );
+}
+
+// Inner editor — owns one Y.Doc for one note
+function InnerEditor({ noteId, ...props }) {
+  // Fresh Y.Doc per mount — created once, destroyed on unmount
+  const [ydoc] = useState(() => new Y.Doc());
+
+  // Fetch note's Yjs state from server
+  const { data: fullNote } = trpc.notes.byId.useQuery({ id: noteId });
+
+  // Hydrate the Y.Doc when server data arrives
+  useEffect(() => {
+    if (!fullNote?.yjsState) return;
+    const bytes = base64ToUint8Array(fullNote.yjsState);
+    Y.applyUpdate(ydoc, bytes, "remote");
+  }, [fullNote]);
+
+  // Listen for local changes → debounced sync to server
+  useEffect(() => {
+    const handler = (update, origin) => {
+      if (origin === "remote") return; // Don't sync incoming updates back
+      debouncedSync();
+    };
+    ydoc.on("update", handler);
+    return () => ydoc.off("update", handler);
+  }, [ydoc]);
+
+  // Cleanup: flush pending sync and destroy doc
+  useEffect(() => {
+    return () => {
+      debouncedSync.flush();
+      ydoc.destroy();
+    };
+  }, [ydoc]);
+
+  // TipTap editor with Collaboration extension
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ history: false }), // Yjs handles undo
+      Collaboration.configure({ document: ydoc }),
+      // ... other extensions
+    ],
+  });
+}
+```
+
+When you click a different note in the sidebar:
+1. React sees the key changed
+2. Old `InnerEditor` unmounts → cleanup fires → pending sync flushes → `Y.Doc` destroyed
+3. New `InnerEditor` mounts → fresh `Y.Doc` created → server state fetched → content appears
+
+Zero shared state between notes. Impossible for content to bleed. The `key` prop does what a thousand lines of state management couldn't.
+
+## The Reliability Problem: What If You Close The Tab?
+There's a gap in this design. The sync is debounced - it waits 2 seconds after you stop typing before sending. If you type "hello" and immediately close the tab, the sync never fires. Your data is gone.
+
+JavaScript's `beforeunload` event can't save you here. It fires synchronously, and you can't await an async tRPC call inside it. The browser will kill the page before your request completes.
+
+The solution is `navigator.sendBeacon()` - a browser API designed specifically for this. It queues a request that survives page unload. The browser guarantees delivery even after the page is destroyed.
+
+```typescript
+// Emergency sync — fires on tab close, page refresh, or note switch
+const sendBeaconSync = useCallback(() => {
+  if (!hasPendingChangesRef.current) return;
+
+  const fullState = Y.encodeStateAsUpdate(ydoc);
+  const base64 = uint8ArrayToBase64(fullState);
+
+  navigator.sendBeacon(
+    "/api/notes/sync-beacon",
+    new Blob(
+      [JSON.stringify({ id: noteId, update: base64 })],
+      { type: "application/json" }
+    )
+  );
+}, [noteId, ydoc]);
+
+// Fires on page close
+useEffect(() => {
+  const handleBeforeUnload = () => sendBeaconSync();
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+}, [sendBeaconSync]);
+
+// Also fires on note switch (component unmount)
+useEffect(() => {
+  return () => {
+    debouncedSync.flush();    // Try the normal way first
+    sendBeaconSync();          // Beacon as backup
+    ydoc.destroy();
+  };
+}, [ydoc]);
+```
+
+The beacon endpoint is a plain Next.js API route (not tRPC, because `sendBeacon` can't handle tRPC's encoding). It does the exact same Yjs merge as the tRPC sync procedure. Two save paths, same result, zero data loss.
+
+## The Bug That Almost Broke Me
+Everything I've described above worked in development. The architecture was sound. The sync was firing. The server was returning 200s. I deployed to Vercel, opened my app, created a note, typed some content, refreshed the page.
+
+The note was gone.
+
+Not just the content. The entire note. Vanished from the sidebar. As if it never existed.
+
+I spent hours debugging the Yjs integration. I rewrote the editor lifecycle three times. I added a `suppressSync` ref to prevent hydration loops. I created a fresh `Y.Doc` per note. I verified that the sync mutation was returning 200. I added diagnostic logging to every tRPC procedure.
+
+The server logs showed everything working perfectly:
+
+```plaintext
+➕ CREATE: userId: xxx noteId: 26f7ae63
+✅ CREATE: Note created: 26f7ae63
+🔍 BYID: Found note: { id: '26f7ae63', hasYjs: true, yjsLen: 4 }
+🔄 SYNC: Saving 114 bytes for note: 26f7ae63
+```
+
+The note was in the database. The Yjs state was saved. The sync was succeeding. But on refresh, the note disappeared from the UI.
+
+I was losing my mind.
+
+### The Silent Catch
+After hours of debugging, I finally looked at the right file. Not the editor. Not the sync. Not the database. The storage adapter.
+
+My app has a hybrid storage layer - a pattern that routes data to either cloud (PostgreSQL) or local (`localStorage`) depending on authentication status:
+
+```typescript
+// hybrid-storage.ts
+async getNotes(): Promise<Note[]> {
+  if (this.shouldUseCloud()) {
+    try {
+      return await this.cloud.getNotes();
+    } catch (error) {
+      return this.local.getNotes();  // Silent fallback
+    }
+  }
+  return this.local.getNotes();
+}
+```
+
+See that catch? No `console.error`. No logging. Nothing. If the cloud call fails for any reason, the app silently falls back to `localStorage` and nobody knows.
+
+Now look at the cloud adapter:
+
+```typescript
+// cloud-storage.ts
+async getNotes(): Promise<Note[]> {
+  const notes = await trpcVanilla.notes.list.query();
+  return notes.map((n) => ({ ...n }));
+}
+```
+
+And look at what the `notes.list` tRPC procedure actually returns:
+
+```typescript
+// Server
+return {
+  notes: notes.map((n) => ({ ...n, yjsState: null })),
+  nextCursor,
+};
+```
+
+It returns `{ notes: [...], nextCursor }`. An object. Not an array.
+
+`notes.map()` was calling `.map()` on an object. Every single time. This threw a `TypeError`. Every single time. And the silent catch in `hybrid-storage.ts` swallowed it. Every. Single. Time.
+
+My app had been reading from `localStorage` for weeks. Old notes showed up because they were cached there from before I added cloud sync. New notes - created via the cloud tRPC endpoint, saved to PostgreSQL, synced with Yjs - were invisible on refresh because `getNotes()` was returning stale `localStorage` data.
+
+The fix was six characters:
+
+```typescript
+// Before (broken)
+const notes = await trpcVanilla.notes.list.query();
+return notes.map((n) => ({ ...n }));
+
+// After (fixed)
+const result = await trpcVanilla.notes.list.query();
+return result.notes.map((n) => ({ ...n }));
+//            ^^^^^^
+```
+
+Six characters. That's what three hours of debugging, three complete editor rewrites, and one existential crisis came down to. `.notes`.
+
+The moment I deployed the fix, every single "lost" note reappeared. They'd been sitting in my PostgreSQL database the entire time, perfectly synced, perfectly merged, completely invisible because of a silent catch block hiding a property access error.
+
+### The Lesson That Changed How I Code
+I now have one rule that I will never break:
+
+```typescript
+// NEVER do this
+try {
+  return await this.cloud.getNotes();
+} catch (error) {
+  return this.local.getNotes();
+}
+
+// ALWAYS do this
+try {
+  return await this.cloud.getNotes();
+} catch (error) {
+  console.error("Cloud getNotes failed, falling back to local:", error);
+  return this.local.getNotes();
+}
+```
+
+One `console.error`. That's all it would have taken. I would have seen `TypeError: notes.map is not a function` on the first page load and fixed it in thirty seconds.
+
+Silent fallbacks are designed to improve user experience. But when they hide bugs, they become the worst kind of technical debt - the kind you don't know you have until you've wasted hours chasing a ghost in a completely different part of the codebase.
+
+Log your errors. All of them. Even in fallback paths. Especially in fallback paths.
+
+## The Full Stack: How Everything Fits Together
+People keep asking me about my stack, so let me lay it out completely. This isn't a tutorial - it's the reasoning behind every choice.
+
+![WebNotes Full Stack](/vn-fullstack.jpg)
+
+### Why Tauri Instead of Electron
+Electron ships an entire copy of Chromium with every app. Notion's desktop app is over 300MB. Obsidian's is around 250MB. They're not desktop apps - they're web browsers wearing a trench coat.
+
+Tauri uses the operating system's native webview. On macOS, that's WebKit. On Windows, it's WebView2 (Edge). On Linux, it's WebKitGTK. The result is a binary under 10MB that launches instantly because it isn't booting up a separate browser engine.
+
+The backend of a Tauri app is Rust, which gives me native SQLite access without an ORM, without a runtime, without garbage collection pauses. Notes load from disk in microseconds.
+
+### Why Zustand Instead of Redux or Context
+My state management needs are simple but subtle. When you type in a note, the UI needs to update instantly - you can't wait for a server round-trip to confirm the save. Zustand gives me optimistic updates with minimal boilerplate:
+
+```typescript
+createNote: async (data) => {
+  const newNote = { id: uuidv4(), ...data };
+
+  // Update UI immediately — user sees the note appear
+  set((state) => ({
+    notes: sortNotes([newNote, ...state.notes]),
+  }));
+
+  // Persist to server in the background
+  try {
+    await storage.createNote(newNote);
+    // Set active only AFTER server confirms existence
+    set({ activeNoteId: newNote.id });
+  } catch (error) {
+    // Rollback on failure
+    set((state) => ({
+      notes: state.notes.filter((n) => n.id !== newNote.id),
+    }));
+  }
+}
+```
+
+That `set active only AFTER server confirms` part is something I learned the hard way. My original code set the active note immediately, before the server knew the note existed. The editor would mount, try to fetch the note, get a 404, and fail silently. Another ghost bug that cost hours.
+
+### Why tRPC Instead of REST
+Type safety from database to UI. If I change a field name in my Prisma schema, TypeScript yells at me in every file that touches that field - server procedures, client queries, storage adapters, components. No runtime surprises. No "the API changed and nobody updated the frontend" disasters.
+
+If I rename 'content' to 'body' in my schema, TypeScript catches it everywhere. Immediately. Not in production. Not at 3am. Now.
+
+### The Hybrid Storage Pattern
+This is the part I'm most proud of architecturally, despite the fact that it nearly destroyed me.
+
+The app runs in three environments:
+1. Tauri desktop: SQLite database, managed by Rust
+2. Web, authenticated: PostgreSQL via tRPC
+3. Web, unauthenticated or offline: `localStorage`
+
+One interface, three backends:
+
+```typescript
+class HybridStorageAdapter {
+  private local: LocalStorageAdapter;
+  private cloud: CloudStorageAdapter;
+  private tauri: TauriStorageAdapter;
+
+  async getNotes(): Promise<Note[]> {
+    if (isTauri) return this.tauri.getNotes();
+    if (this.shouldUseCloud()) {
+      try {
+        return await this.cloud.getNotes();
+      } catch (error) {
+        console.error("Cloud failed:", error); 
+        return this.local.getNotes();
+      }
+    }
+    return this.local.getNotes();
+  }
+}
+```
+
+The editor, the state store, the UI - none of them know or care which backend is active. They call `storage.getNotes()` and get notes. The routing happens invisibly.
+
+This is the adapter pattern from the Gang of Four design patterns book, applied to a real problem. I didn't know that when I wrote it. I just needed the same code to work on desktop and web. Sometimes you reinvent design patterns by accident because the problem demands it.
+
+## The Numbers
+Let me put some concrete numbers on what "stateless" and "$0" actually mean.
+
+**Notion's Infrastructure (Estimated)**
+- Hundreds of WebSocket servers for real-time sync
+- Redis clusters for pub/sub
+- PostgreSQL clusters for persistence
+- Custom OT engine maintained by a team of 20+ engineers
+- Estimated infrastructure cost: $2-5 million/month
+- Binary size: ~300MB
+
+**WebNotes' Infrastructure**
+- Vercel serverless functions (free tier)
+- Neon PostgreSQL (free tier, 0.5GB storage)
+- No WebSocket servers
+- No Redis
+- No dedicated sync infrastructure
+- Maintained by one person between lectures
+- Infrastructure cost: $0/month
+- Binary size: &lt;10MB
+
+Same CRDT-based conflict resolution. Same eventual consistency guarantees. Same "edit offline, sync when online" behavior. Different price tag.
+
+## The Tradeoff I'm Making
+I don't have real-time cursors. If two people open the same note simultaneously, they won't see each other's cursors dancing across the screen. Their edits will merge perfectly - CRDTs guarantee that - but they won't see it happening live.
+
+For a personal note-taking app, this is the right tradeoff. I'm not building Google Docs for enterprise teams. I'm building a tool for people who think and write, alone, across multiple devices.
+
+And when I do want multi-cursor collaboration? I can add it in a weekend using PartyKit's free tier and the `@tiptap/extension-collaboration-cursor` package. My Yjs foundation supports it out of the box. I just haven't plugged in the transport layer yet.
+
+The architecture doesn't prevent real-time. It just doesn't require it.
+
+## What I'd Do Differently
+I've made a lot of mistakes building this. Here are the ones worth sharing.
+
+### 1. Test Your Storage Layer
+I had zero tests. Not one. If I'd written a single integration test for `cloud.getNotes()`, the silent TypeError would have been caught immediately:
+
+```typescript
+test("getNotes returns notes from cloud", async () => {
+  const notes = await cloud.getNotes();
+  expect(Array.isArray(notes)).toBe(true);
+  expect(notes[0]).toHaveProperty("id");
+});
+```
+
+That test would have failed the moment I changed the API response shape. Instead, I spent three hours debugging the wrong layer of the stack.
+
+### 2. Never Silently Catch Errors
+I said this already. I'll say it again. The silent catch cost me more time than any other single decision in this project. Every catch block should log. Every fallback path should announce itself. "Failing silently" is not a feature - it's a time bomb.
+
+### 3. Understand Your Abstractions Before Adding Complexity
+I added Yjs CRDT sync on top of a storage layer that was silently broken. The Yjs integration worked perfectly - I just couldn't see it because the data retrieval path was returning stale `localStorage` data. I spent hours suspecting Yjs when the bug was in a completely unrelated file.
+
+Before adding a complex feature, make sure the foundation it sits on actually works. A five-minute smoke test would have saved me an entire evening.
+
+### 4. Optimistic UI Needs Careful Ordering
+Setting `activeNoteId` before the note existed in the database caused a race condition: the editor would try to fetch a note that hadn't been created yet. The fix was two lines - move the `activeNoteId` assignment to after the `createNote` call. But finding it required tracing the entire lifecycle from click to database.
+
+The lesson: optimistic updates are powerful, but the order of operations matters. Update what the user sees first (add the note to the list), but don't trigger dependent systems (the editor) until the prerequisite (database insert) is confirmed.
+
+## What's Next
+WebNotes is open source and actively developed. Here's what's coming:
+
+**Short Term:**
+- PartyKit integration for optional real-time collaboration
+- Mobile support via Tauri v2 (iOS and Android)
+- Graph view for visualizing note connections
+
+**Long Term:**
+- A Rust/WASM editor core that bypasses the DOM entirely for sub-millisecond rendering
+- End-to-end encryption using the Yjs document structure
+- Plugin system for community extensions
+
+If any of this sounds interesting, the code is on GitHub. PRs are welcome. Issues are encouraged. Stars are appreciated.
+
+## The Takeaway
+You don't need a WebSocket server to build sync. You don't need Electron to build a desktop app. You don't need a team of twenty to build a product that competes with billion-dollar companies. You don't even need a budget.
+
+You need a constraint that forces creativity. Mine was being broke.
+
+The note-taking market is dominated by companies that spent millions building infrastructure I replicated for free. Not because I'm smarter than their engineers - I'm demonstrably not - but because the tools available in 2025 (Yjs, Tauri, Vercel, Neon) make it possible for a single person to build what used to require a team.
+
+The gap between "indie project" and "real product" has never been smaller. The only question is whether you'll build something.
+
+I did. It's called WebNotes. And it syncs your notes for $0/month.
+
+Note taking has never been better.
