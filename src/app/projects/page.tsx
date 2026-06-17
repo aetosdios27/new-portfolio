@@ -28,12 +28,12 @@ export default function ProjectsPage() {
 
   const getProjectSummary = (slug: string) => {
     const summaries: Record<string, string> = {
-      "webnotes": "serverless crdt collaboration",
-      "konto": "strict double-entry accounting",
-      "styx": "production bittorrent client",
-      "iris": "zero-copy vulkan image viewer",
-      "axiom-core": "agent style guide registry",
-      "vmrl": "mathematical simulation runtime"
+      "webnotes": "local-first collaborative notes app powered by serverless crdts",
+      "konto": "mathematically strict double-entry accounting engine for typescript",
+      "styx": "production-grade bittorrent client engineered in rust for privacy",
+      "iris": "zero-copy vulkan image viewer featuring hardware-accelerated rendering",
+      "axiom-core": "unified registry and cli for ai agent style guide schemas",
+      "vmrl": "high-performance mathematical runtime and simulation framework"
     };
     return summaries[slug] || "SYSTEM OF RECORD // BRUTALIST ARCHITECTURE";
   };
