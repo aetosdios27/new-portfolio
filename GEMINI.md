@@ -6,11 +6,13 @@
 This document serves as the local contextual brain for the `aetos` portfolio project. It synthesizes the project's architectural guidelines, design principles, and accumulated best practices from the `~/.agents/skills` repository.
 
 ## 1. The Spacing & Aesthetic Constitution
-* **The Grid**: The layout is restricted to a rigid, left-aligned `640px` central axis. No floating panels, no arbitrary centering of blocks. Content begins and ends with severe, document-like precision.
-* **Palette**: 
-  * Light Mode: Cream background (`#F5F0E8`), Wimbledon green text (`#1B5E20`).
-  * Dark Mode: High-contrast monochrome.
-  * *Implementation*: Controlled entirely via dynamic CSS variables (`var(--bg)`, `var(--text)`).
+* **The Canvas**: The main layout is strictly contained within a centered `700px` by `1400px` virtual canvas. No floating panels or arbitrary unconstrained blocks. Content begins and ends with severe, document-like precision. Vertical tracking lines sit at `10px` from the viewport edges.
+* **The Grid**: Authoritarian 8-point grid. Deliberate whitespace tuning is required. Never jump between arbitrary spacing values (e.g., `gap-4` to `mt-20`); use proportional scaling to maintain rigorous mathematical tension.
+* **Optical Alignment**: Strict optical alignment is mandatory. If an icon or toggle feels visually misaligned with its adjacent text baseline, fix it using precise offsets (`-translate-y-[1px]`) rather than ignoring it.
+* **Palette & CSS Variables**: 
+  * Light Mode: Cream background (`#F5F0E8`), Wimbledon green text (`#1B5E20`), Glow (`#1B5E20`).
+  * Dark Mode (Default): Matte black background (`#000000`), Clean white text (`#F0F0F0`), Glow (`#FFFFFF`).
+  * *Implementation*: Controlled entirely via dynamic CSS variables (`var(--bg)`, `var(--text)`, `var(--glow)`).
 * **Interactions**: Standard CSS opacity fades are banned for major shifts. Theme transitions utilize a hardware-accelerated **View Transition API** radial flush (`850ms` cubic-bezier), giving the site a highly premium, cinematic feel.
 * **Scrollbars**: Hidden globally via webkit/ms-overflow overrides to maintain an unbroken canvas.
 
