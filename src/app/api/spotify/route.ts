@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getNowPlaying, getRecentlyPlayed } from "@/lib/spotify";
 
-export const revalidate = 30; // 30s caching to prevent spam
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
