@@ -2,8 +2,7 @@ import { getEntry, getEntries } from "@/lib/content";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { skills } from "@/lib/skills";
-import { SkillBadge } from "@/components/Skills";
+import { ProjectSkills } from "@/components/Skills";
 
 export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
@@ -94,19 +93,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
           <div className="flex flex-col gap-3">
             <h3 className="text-xs font-bold opacity-50 tracking-widest mb-2" style={{ fontFamily: "var(--font-geist-mono)" }}>[ STACK ]</h3>
-            <div className="flex flex-wrap gap-2.5">
-              {project.tags.map(tag => {
-                const skillData = skills.find(s => s.name.toLowerCase() === tag.toLowerCase());
-                if (skillData && skillData.icon) {
-                  return <SkillBadge key={tag} name={skillData.name} Icon={skillData.icon} />;
-                }
-                return (
-                  <span key={tag} className="text-[11px] px-2 py-1 bg-[var(--text)]/10 text-[var(--text)] border border-[var(--text)]/20 uppercase tracking-widest" style={{ fontFamily: "var(--font-geist-mono)" }}>
-                    {tag}
-                  </span>
-                );
-              })}
-            </div>
+            <ProjectSkills tags={project.tags} />
           </div>
         </div>
       </div>

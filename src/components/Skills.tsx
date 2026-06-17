@@ -34,3 +34,21 @@ export function Skills() {
     </div>
   );
 }
+
+export function ProjectSkills({ tags }: { tags: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-2.5">
+      {tags.map(tag => {
+        const skillData = skills.find(s => s.name.toLowerCase() === tag.toLowerCase());
+        if (skillData && skillData.icon) {
+          return <SkillBadge key={tag} name={skillData.name} Icon={skillData.icon} />;
+        }
+        return (
+          <span key={tag} className="text-[11px] px-2 py-1 bg-[var(--text)]/10 text-[var(--text)] border border-[var(--text)]/20 uppercase tracking-widest" style={{ fontFamily: "var(--font-geist-mono)" }}>
+            {tag}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
