@@ -25,18 +25,18 @@ export function Hero() {
 
   return (
     <div
-      className="flex flex-col sm:flex-row items-start justify-between gap-12 sm:gap-0 w-full select-none"
+      className="flex flex-row items-center justify-between w-full select-none"
       style={{ fontFamily: "var(--font-geist-mono)" }}
     >
-      <div className="flex flex-col gap-6">
-        <KineticHeading as="h1" className="text-[56px] sm:text-[64px] leading-[0.95] tracking-tight text-[var(--text)] mt-[-4px]">
+      <div className="flex flex-col gap-4 sm:gap-6">
+        <KineticHeading as="h1" className="text-[48px] sm:text-[64px] leading-[0.95] tracking-tight text-[var(--text)] mt-[-4px]">
           aetos
         </KineticHeading>
 
         <p className="flex items-center gap-[6px] text-[15px] text-[var(--text)] opacity-50 whitespace-nowrap" style={{ fontFamily: "var(--font-geist-mono)" }}>
           <span>i</span>
           <span className="relative flex items-center justify-center" style={{ width: 48, height: "1.2em" }}>
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" initial={false}>
               <motion.span
                 key={words[idx]}
                 initial={{ y: 6, opacity: 0 }}
@@ -54,7 +54,7 @@ export function Hero() {
       </div>
 
       <div 
-        className="group relative w-28 h-28 border border-[var(--text)]/20 p-1 bg-[var(--bg)] shadow-[2px_2px_0px_var(--text)] transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none hover:border-[var(--text)] cursor-crosshair"
+        className="group relative w-20 h-20 sm:w-28 sm:h-28 flex-shrink-0 border border-[var(--text)]/20 p-1 bg-[var(--bg)] shadow-[2px_2px_0px_var(--text)] transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none hover:border-[var(--text)] cursor-crosshair"
         onMouseEnter={() => setIsHoveringPfp(true)}
         onMouseLeave={() => setIsHoveringPfp(false)}
       >

@@ -3,6 +3,7 @@ import { GeistMono } from "geist/font/mono";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavPanel } from "@/components/NavPanel";
 import { Ticker } from "@/components/Ticker";
+import { Analytics } from "@vercel/analytics/next";
 import { LenisProvider } from "@/components/LenisProvider";
 import Script from "next/script";
 import "./globals.css";
@@ -45,6 +46,7 @@ export default function RootLayout({
           </div>
           {children}
           <Ticker />
+          <Analytics />
         </LenisProvider>
       </body>
     </html>

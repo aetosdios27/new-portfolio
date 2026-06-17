@@ -36,8 +36,8 @@ export default async function Home() {
             <Hero />
           </div>
 
-          <div className="w-full flex flex-col sm:flex-row items-start sm:items-center gap-8 sm:gap-6 justify-between mt-12 py-8 border-y border-[var(--text)]/20">
-            <div className="flex gap-6 items-center">
+          <div className="w-full flex items-center justify-between mt-8 sm:mt-12 py-6 sm:py-8 border-y border-[var(--text)]/20">
+            <div className="flex gap-4 sm:gap-6 items-center">
               <div className="group relative flex items-center justify-center">
                 <a href="https://github.com/aetosdios27" target="_blank" rel="noopener noreferrer" className="text-[var(--text)] opacity-50 hover:opacity-100 transition-opacity">
                   <SiGithub size={18} />
