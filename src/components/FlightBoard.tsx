@@ -31,11 +31,12 @@ const getHeroImage = (slug: string) => {
 
 const getProjectSummary = (slug: string) => {
   const summaries: Record<string, string> = {
-    "webnotes": "local-first collaborative notes app with stateless CRDT sync on serverless functions, 120k+ views at launch",
-    "konto": "mathematically strict embeddable double-entry accounting engine for TypeScript, PostgreSQL-native",
-    "styx": "production-grade BitTorrent client in Rust, correct and private by construction",
-    "iris": "zero-copy GPU image viewer for Linux, raw Vulkan, zero CPU copies in the display path",
-    "axiom-core": "registry and CLI for AI agent style guides, one schema, seven output formats"
+    "webnotes": "serverless crdt collaboration",
+    "konto": "strict double-entry accounting",
+    "styx": "production bittorrent client",
+    "iris": "zero-copy vulkan image viewer",
+    "axiom-core": "agent style guide registry",
+    "vmrl": "mathematical simulation runtime"
   };
   return summaries[slug] || "SYSTEM OF RECORD // BRUTALIST ARCHITECTURE";
 };
