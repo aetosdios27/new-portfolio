@@ -1,3 +1,5 @@
+"use client";
+
 import { 
   SiRust, SiTypescript, SiGo, SiPostgresql, SiReact, SiNextdotjs, SiTauri, 
   SiVulkan, SiRedis, SiNodedotjs, SiExpress, SiMongodb, SiPrisma, SiTailwindcss, 
