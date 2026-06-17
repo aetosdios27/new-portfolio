@@ -55,7 +55,7 @@ export async function GET() {
 
     return NextResponse.json({
       isPlaying,
-      isRecent: false,
+      isRecent: !isPlaying,
       title,
       artist,
       albumImageUrl,
