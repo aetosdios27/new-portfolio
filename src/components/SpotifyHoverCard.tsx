@@ -22,11 +22,11 @@ export function SpotifyHoverCard({ data }: { data: SpotifyData | null }) {
       href={isLoading ? undefined : data.songUrl}
       target={isLoading ? undefined : "_blank"}
       rel={isLoading ? undefined : "noopener noreferrer"}
-      initial={{ opacity: 0, x: -10, scale: 0.95, filter: "blur(4px)" }}
-      animate={{ opacity: 1, x: 0, scale: 1, filter: "blur(0px)" }}
-      exit={{ opacity: 0, x: -10, scale: 0.95, filter: "blur(4px)" }}
+      initial={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
+      animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+      exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className={`absolute z-50 left-full top-0 ml-6 w-64 bg-[var(--bg)] border border-[var(--text)]/20 shadow-[4px_4px_0px_var(--text)] p-3 flex gap-3 items-center group cursor-crosshair ${isLoading ? 'pointer-events-none' : 'no-underline'}`}
+      className={`absolute z-50 right-0 sm:right-auto sm:left-full top-full sm:top-0 mt-4 sm:mt-0 sm:ml-6 w-[260px] sm:w-64 bg-[var(--bg)] border border-[var(--text)]/20 shadow-[4px_4px_0px_var(--text)] p-3 flex gap-3 items-center group cursor-crosshair ${isLoading ? 'pointer-events-none' : 'no-underline'}`}
       style={{ fontFamily: "var(--font-geist-mono)" }}
     >
       <div className="w-12 h-12 flex-shrink-0 border border-[var(--text)]/20 overflow-hidden relative bg-[var(--text)]/5 flex items-center justify-center">

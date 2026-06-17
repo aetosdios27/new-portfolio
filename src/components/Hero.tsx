@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { KineticHeading } from "@/components/KineticHeading"
 import { SpotifyHoverCard, type SpotifyData } from "@/components/SpotifyHoverCard"
@@ -11,6 +11,7 @@ export function Hero() {
   const [idx, setIdx] = useState(0)
   const [isHoveringPfp, setIsHoveringPfp] = useState(false)
   const [spotifyData, setSpotifyData] = useState<SpotifyData | null>(null)
+  const pfpRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // Eager fetch for zero-latency hover interactions
@@ -21,6 +22,22 @@ export function Hero() {
       
     const t = setInterval(() => setIdx((i) => (i + 1) % words.length), 1800)
     return () => clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      if (pfpRef.current && !pfpRef.current.contains(e.target as Node)) {
+        setIsHoveringPfp(false)
+      }
+    }
+    
+    document.addEventListener("mousedown", handleOutsideClick)
+    document.addEventListener("touchstart", handleOutsideClick)
+    
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick)
+      document.removeEventListener("touchstart", handleOutsideClick)
+    }
   }, [])
 
   return (
@@ -54,9 +71,11 @@ export function Hero() {
       </div>
 
       <div 
+        ref={pfpRef}
         className="group relative w-20 h-20 sm:w-28 sm:h-28 flex-shrink-0 border border-[var(--text)]/20 p-1 bg-[var(--bg)] shadow-[2px_2px_0px_var(--text)] transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none hover:border-[var(--text)] cursor-crosshair"
         onMouseEnter={() => setIsHoveringPfp(true)}
         onMouseLeave={() => setIsHoveringPfp(false)}
+        onClick={() => setIsHoveringPfp(!isHoveringPfp)}
       >
         <AnimatePresence>
           {isHoveringPfp && (
