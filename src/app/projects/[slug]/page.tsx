@@ -46,7 +46,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
             <div className="absolute inset-0 bg-[var(--text)] mix-blend-color pointer-events-none"></div>
           </div>
 
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6">
             <h1 className="text-2xl font-bold tracking-tight uppercase" style={{ fontFamily: "var(--font-geist-mono)" }}>{project.title}</h1>
             <div className="flex items-center gap-3 border border-[var(--text)]/20 px-3 py-1.5 bg-[var(--bg)] shadow-[2px_2px_0px_var(--text)]">
               <div className="relative flex items-center justify-center w-2 h-2">

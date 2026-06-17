@@ -25,11 +25,11 @@ export function Hero() {
 
   return (
     <div
-      className="flex items-start justify-between w-full select-none"
+      className="flex flex-col sm:flex-row items-start justify-between gap-12 sm:gap-0 w-full select-none"
       style={{ fontFamily: "var(--font-geist-mono)" }}
     >
       <div className="flex flex-col gap-6">
-        <KineticHeading as="h1" className="text-[64px] leading-[0.95] tracking-tight text-[var(--text)] mt-[-4px]">
+        <KineticHeading as="h1" className="text-[56px] sm:text-[64px] leading-[0.95] tracking-tight text-[var(--text)] mt-[-4px]">
           aetos
         </KineticHeading>
 

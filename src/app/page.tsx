@@ -32,11 +32,11 @@ export default async function Home() {
     <main className="min-h-svh flex justify-center bg-[var(--bg)]">
       <div className="flex flex-col relative w-full items-center" style={{ maxWidth: 700, minHeight: "100svh" }}>
         <div className="w-full max-w-[640px] px-4 pb-24 flex flex-col items-start">
-          <div className="mt-32 w-full">
+          <div className="mt-24 sm:mt-32 w-full">
             <Hero />
           </div>
 
-          <div className="w-full flex items-center justify-between mt-12 py-8 border-y border-[var(--text)]/20">
+          <div className="w-full flex flex-col sm:flex-row items-start sm:items-center gap-8 sm:gap-6 justify-between mt-12 py-8 border-y border-[var(--text)]/20">
             <div className="flex gap-6 items-center">
               <div className="group relative flex items-center justify-center">
                 <a href="https://github.com/aetosdios27" target="_blank" rel="noopener noreferrer" className="text-[var(--text)] opacity-50 hover:opacity-100 transition-opacity">
@@ -61,7 +61,9 @@ export default async function Home() {
             </div>
             
             <a 
-              href="mailto:pushpendra@example.com" 
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=aetosdios27@gmail.com" 
+              target="_blank"
+              rel="noopener noreferrer"
               className="group relative flex items-center gap-3 px-5 py-2.5 border border-[var(--text)]/20 bg-[var(--bg)] transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[2px_2px_0px_var(--text),inset_0_0_0_1px_var(--text)] hover:border-[var(--text)] active:translate-x-0 active:translate-y-0 active:shadow-none no-underline"
               style={{ fontFamily: "var(--font-geist-mono)" }}
             >

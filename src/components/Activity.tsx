@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { GitHubCalendar, ThemeInput } from "react-github-calendar"
+import { GitHubCalendar } from "react-github-calendar"
 
 export function Activity() {
   const [mounted, setMounted] = useState(false)
@@ -14,7 +14,7 @@ export function Activity() {
     return <div className="h-[110px] w-full animate-pulse bg-[var(--text)] opacity-10 rounded-sm" />
   }
 
-  const explicitTheme: ThemeInput = {
+  const explicitTheme: any = {
     light: [
       'color-mix(in srgb, var(--text) 5%, transparent)', 
       'color-mix(in srgb, var(--text) 30%, transparent)', 
@@ -47,7 +47,7 @@ export function Activity() {
         blockSize={9}
         blockMargin={2}
         fontSize={12}
-        renderColorLegend={() => null}
+        renderColorLegend={() => <></>}
       />
     </div>
   )

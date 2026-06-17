@@ -15,7 +15,7 @@ export function NavPanel() {
   return (
     <nav
       aria-label="Primary Navigation"
-      className="flex items-center gap-12"
+      className="flex items-center gap-6 sm:gap-12"
       style={{
         fontFamily: "var(--font-geist-mono)",
         letterSpacing: "0.04em",

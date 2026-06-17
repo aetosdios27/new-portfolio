@@ -40,7 +40,7 @@ export default function RootLayout({
       <body className={`${GeistMono.variable} pb-10`}>
         <LenisProvider>
           <ThemeToggle />
-          <div className="fixed top-0 left-0 w-full flex justify-center z-40 bg-[var(--bg)] py-8 border-b border-[var(--text)]/10">
+          <div className="fixed top-0 left-0 w-full flex justify-center z-40 bg-[var(--bg)] py-5 sm:py-8 border-b border-[var(--text)]/10">
             <NavPanel />
           </div>
           {children}
