@@ -26,7 +26,8 @@ export default async function Home() {
       status: p.status,
       tags: p.tags,
       links: p.links
-    }));
+    }))
+    .sort((a, b) => Number(b.year ?? 0) - Number(a.year ?? 0));
 
   return (
     <main className="min-h-svh flex justify-center bg-[var(--bg)]">
