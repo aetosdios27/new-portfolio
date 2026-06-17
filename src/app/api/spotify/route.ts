@@ -19,16 +19,26 @@ export async function GET() {
       });
     }
 
+    const lockedInPayload = {
+      isPlaying: false,
+      isRecent: false,
+      isLockedIn: true,
+      title: "bro is locked in",
+      artist: "no music in last 3hrs",
+      albumImageUrl: "/pfp.jpg",
+      songUrl: "https://open.spotify.com/user/aetosdios", // or a dummy URL
+    };
+
     // Fallback to recently played
     const recentResponse = await getRecentlyPlayed();
     if (recentResponse.status === 204 || recentResponse.status > 400) {
-      return NextResponse.json({ isPlaying: false });
+      return NextResponse.json(lockedInPayload);
     }
 
     const recentData = await recentResponse.json();
     
     if (!recentData.items || recentData.items.length === 0) {
-      return NextResponse.json({ isPlaying: false });
+      return NextResponse.json(lockedInPayload);
     }
 
     const track = recentData.items[0].track;
@@ -39,7 +49,7 @@ export async function GET() {
     const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
     
     if (playedAt < threeHoursAgo) {
-      return NextResponse.json({ isPlaying: false });
+      return NextResponse.json(lockedInPayload);
     }
 
     return NextResponse.json({

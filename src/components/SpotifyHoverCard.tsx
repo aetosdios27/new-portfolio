@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 export type SpotifyData = {
   isPlaying: boolean;
   isRecent?: boolean;
+  isLockedIn?: boolean;
   title?: string;
   artist?: string;
   albumImageUrl?: string;
@@ -12,7 +13,7 @@ export type SpotifyData = {
 };
 
 export function SpotifyHoverCard({ data }: { data: SpotifyData | null }) {
-  if (data && !data.isPlaying && !data.isRecent) return null;
+  if (data && !data.isPlaying && !data.isRecent && !data.isLockedIn) return null;
 
   const isLoading = data === null;
 
@@ -51,7 +52,7 @@ export function SpotifyHoverCard({ data }: { data: SpotifyData | null }) {
 
       <div className="flex flex-col justify-center overflow-hidden w-full">
         <div className="text-[9px] uppercase tracking-widest opacity-40 mb-1 flex items-center justify-between">
-          <span>{isLoading ? "[ UPLINK ESTABLISHING ]" : (data?.isPlaying ? "[ NOW PLAYING ]" : "[ LAST PLAYED ]")}</span>
+          <span>{isLoading ? "[ UPLINK ESTABLISHING ]" : (data?.isLockedIn ? "[ SILENCE DETECTED ]" : (data?.isPlaying ? "[ NOW PLAYING ]" : "[ LAST PLAYED ]"))}</span>
         </div>
         <div className="text-[12px] font-bold text-[var(--text)] truncate">
           {isLoading ? "decrypting telemetry..." : data?.title}
