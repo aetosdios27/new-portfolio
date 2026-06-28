@@ -1,0 +1,381 @@
+---
+title: "making a bencode parser in rust"
+year: 2026
+tags: ["Rust", "Systems Engineering", "BitTorrent"]
+brief: "there's a scene in every project where you think you're about to knock out a quick task and then the task opens up into something that teaches you a lot more than you expected. phase 2 of making styx was that scene for me."
+image: "/styx2-banner.jpeg"
+project: "Styx"
+---
+
+there's a scene in every project where you think you're about to knock out a quick task and then the task opens up into something that teaches you a lot more than you expected.
+
+phase 2 of making styx was that scene for me.
+
+styx is a bittorrent client i'm building in rust. the goal is ambitious: the first client that is correct, secure and private by construction, not as an afterthought, but as a design constraint from day one. but before any of that, before peer connections and dht and ml-based throttle detection, i needed to write a parser for something called bencode.
+
+bencode is bittorrent's serialization format. it has four types. i figured it would not take a lot of time.
+
+but alas here we are.
+
+you should read my first blog in the styx series to understand what bittorrent actually is before we go further:
+
+[I didn't understand BitTorrent so I simulated it first](https://aetosdios.hashnode.dev/styx-phase-1)
+
+* * *
+
+## wtf is bencode?
+
+bencode is the serialization format bittorrent uses everywhere. `.torrent` files are bencoded. tracker responses (the server that helps you find the swarm) are bencoded. dht messages (peer discovery with no server at all) are bencoded.
+
+think of it like json, but designed for a specific set of constraints: it needs to be unambiguous, compact, easy to parse without a schema, and, most importantly, canonical. more on that word in a moment.
+
+bencode has four types.
+
+**integers** look like this:
+
+```text
+i42e    →   42
+i-7e    →   -7
+i0e     →   0
+```
+
+the `i` starts the integer, `e` ends it. everything between is base-10 digits.
+
+**byte strings** are length-prefixed:
+
+```text
+4:spam       →   "spam"
+0:           →   ""
+11:hello world   →   "hello world"
+```
+
+the number before `:` tells you exactly how many bytes to read. no guessing, no delimiters, no escaping. just "here's how many bytes, go read them."
+
+**lists** are sequences of values wrapped in `l...e`:
+
+```text
+l4:spami42ee    →   ["spam", 42]
+```
+
+**dictionaries** are key-value pairs wrapped in `d...e`:
+
+```text
+d3:bar4:spam3:fooi42ee    →   {"bar": "spam", "foo": 42}
+```
+
+two rules for dictionaries matter a lot: keys must be byte strings, and they must appear in lexicographic order. we'll get into why that ordering rule is load-bearing later.
+
+that's the whole format. four types. you could sketch the grammar on a napkin.
+
+and yet.
+
+* * *
+
+## the rust type for parsed values
+
+before writing a single parse function, i needed to decide how to represent these values in memory.
+
+```rust
+pub enum BencodeValue {
+    Integer(i64),
+    Bytes(Bytes),
+    List(Vec<BencodeValue>),
+    Dict(BTreeMap<Vec<u8>, BencodeValue>),
+}
+```
+
+a few of these choices look obvious but aren't.
+
+byte strings are `Bytes`, not `String`. bencode strings are not text. they are sequences of bytes. some of them happen to be readable ascii, like the key `"announce"` in a torrent file. some are raw binary, like the `pieces` field, which is a long sequence of 20-byte sha-1 hashes packed back to back. if we stored these as `String`, we'd force utf-8 validation where the protocol guarantees nothing about encoding. that would either panic on valid binary fields or require ugly workarounds everywhere.
+
+dictionary keys are `Vec<u8>` for the same reason.
+
+the dictionary uses `BTreeMap`, not `HashMap`. a `BTreeMap` keeps its keys in sorted order, which means when we encode a value back to bytes, the keys come out in lexicographic order automatically. if we used `HashMap`, we'd need to remember to sort at every encoding call site. one day someone would forget. `BTreeMap` makes the right thing the default thing.
+
+the public api commits to two functions:
+
+```rust
+pub fn decode(input: &[u8]) -> Result<BencodeValue, BencodeError>;
+pub fn encode(value: &BencodeValue) -> Vec<u8>;
+```
+
+every layer in styx that touches bencoded data goes through these two surfaces. simple, composable, and easy to test.
+
+* * *
+
+## errors need to mean something
+
+here's something i didn't fully appreciate before this phase: a parser for network input should never panic, but that's only half the requirement. it also needs to produce *specific* errors.
+
+"parse error" is nearly useless when something goes wrong. you need to know what failed, where, and why. here's the full error type:
+
+```rust
+pub enum BencodeError {
+    EmptyInput,
+    TrailingBytes { offset: usize },
+    InvalidToken { offset: usize, byte: u8 },
+    UnexpectedEof { offset: usize },
+    InvalidInteger { offset: usize },
+    IntegerOverflow { offset: usize },
+    InvalidByteStringLength { offset: usize },
+    ByteStringOutOfBounds {
+        offset: usize,
+        length: usize,
+        remaining: usize,
+    },
+    InvalidDictionaryKey { offset: usize },
+    UnsortedDictionaryKey { offset: usize },
+    DuplicateDictionaryKey { offset: usize },
+    DepthLimitExceeded { offset: usize, limit: usize },
+    TorrentMetainfoNotImplemented,
+}
+```
+
+look at the distinction between `InvalidByteStringLength` and `ByteStringOutOfBounds`. they sound similar. they are completely different.
+
+`InvalidByteStringLength` means the syntax is wrong. the length field has a leading zero or a non-digit character. the input is malformed before we even try to read any bytes.
+
+`ByteStringOutOfBounds` means the syntax is valid but the input is incomplete. the length field says "read 256 bytes" but only 10 remain. this is probably truncation: the data got cut off in transit.
+
+if you collapse those into one generic error, you lose real information. when debugging why a tracker response fails, you want to know whether the tracker is sending malformed data or whether your network layer is dropping bytes. those are different problems with different fixes.
+
+offsets matter too. `InvalidInteger { offset: 128 }` points you to byte 128 of the input. that turns a mystery into a 30-second investigation.
+
+* * *
+
+## canonical integers and why i care so much
+
+here's the moment the format showed its teeth.
+
+these are valid integers:
+
+```text
+i0e
+i42e
+i-42e
+```
+
+these all look valid but aren't:
+
+```text
+i03e       ← leading zero
+i-03e      ← leading zero after minus
+i-0e       ← negative zero
+ie         ← empty body
+i42        ← missing terminator
+```
+
+why reject leading zeros? `03` and `3` are the same number, right?
+
+here's where the word canonical finally pays off.
+
+canonical means there is exactly one correct way to encode any given value. if `i3e`, `i03e`, and `i003e` are all valid encodings of 3, then two different clients might encode the same torrent metadata differently. when that metadata gets hashed to produce the **info-hash**, which is the unique identifier bittorrent uses to name a torrent, different clients would compute different hashes. peers would reject each other. the torrent would fail silently.
+
+the info-hash is basically the torrent's fingerprint. it's computed by taking sha-1 (or sha-256 in bittorrent v2) of the raw bencoded bytes of the info dictionary. if your parser accepts `i03e` and another client only produces `i3e`, you'll compute different hashes for the same logical data. that's not a protocol edge case. that's the kind of bug that takes days to trace.
+
+canonical rules aren't pedantry. they're what makes interoperability possible.
+
+negative zero gets rejected for the same reason. there is one zero. its name is `i0e`.
+
+* * *
+
+## validate before you touch
+
+byte string parsing is where i internalized something i now apply everywhere.
+
+the naive approach to parsing `4:spam` is:
+
+1.  read the 4
+    
+2.  slice `input[offset..offset+4]`
+    
+3.  return the slice
+    
+
+the problem: step 2 panics if fewer than 4 bytes remain. you might think "i'll just be careful," but careful is not a correctness strategy when input is coming from arbitrary peers on the internet.
+
+the correct approach is to check the precondition before acting:
+
+```rust
+let remaining = input.len() - offset;
+if length > remaining {
+    return Err(BencodeError::ByteStringOutOfBounds {
+        offset,
+        length,
+        remaining,
+    });
+}
+// only now is it safe to slice
+```
+
+this pattern generalizes to every operation in the parser. before reading an integer, check there's a terminating `e` somewhere ahead. before entering a dictionary, check we have bytes left to read. before recursing, check the nesting depth.
+
+the mental model is: the input is hostile. not malicious necessarily, most malformed input is just truncated or produced by a buggy client, but the parser shouldn't care about the reason. its job is to accept valid input, reject everything else, and never let everything else cause undefined behavior.
+
+* * *
+
+## why dictionary key ordering matters for correctness
+
+dictionaries must have keys in lexicographic order. i mentioned this earlier. here's why it's interesting beyond "the spec says so."
+
+when bittorrent clients compute the info-hash, they hash the raw bencoded bytes of the `info` dictionary. that's the thing they sign, verify, and use to identify torrents across the entire network.
+
+if key ordering were optional, two clients could encode the same logical dictionary with keys in different orders. different bytes, different hashes, different fingerprints. peers would compute different info-hashes for the same torrent. they couldn't validate each other's data.
+
+required ordering makes the encoding deterministic. given any logical dictionary, there is exactly one valid bencoded representation. the info-hash is stable across every client that implements the spec correctly.
+
+this is also why the parser distinguishes `UnsortedDictionaryKey` from `DuplicateDictionaryKey`. duplicate keys are a different bug: they introduce ambiguity about which value to use. different parsers might pick different values, which breaks the "same bytes, same meaning" guarantee at the protocol level. both errors are fatal, but they're different failure modes and deserve different names.
+
+* * *
+
+## the depth limit nobody talks about
+
+here's something that doesn't come up in most bencode explanations.
+
+what happens when a peer sends you this?
+
+```text
+lllllllllllllllll...l   (thousands of nested lists)   eeeeeeeeeeeeeeeee
+```
+
+a recursive parser without a depth limit will overflow the call stack. in rust that's a process abort, not a panic that returns `Err`. a remote peer has just crashed your client.
+
+the fix is simple:
+
+```rust
+const MAX_NESTING_DEPTH: usize = 512;
+```
+
+if parsing would push nesting past 512, return:
+
+```rust
+Err(BencodeError::DepthLimitExceeded { offset, limit: 512 })
+```
+
+why 512? real torrent files are shallow. a `.torrent` has an info dictionary, which has a file list, which has dictionaries with a few string fields. nesting depth in the wild is almost never above 10. reaching 512 requires constructing a pathological input with hundreds of nested structures before containing a single useful byte. that's not a torrent, it's an attack.
+
+512 handles everything real. it stops everything adversarial. and crucially, the limit lives in code. it's not a comment, not a wish. it's a named constant with a named error.
+
+* * *
+
+## trailing bytes are not optional
+
+`decode` takes a complete input and returns one value. it's not a streaming parser. it doesn't return `(value, remaining_bytes)`.
+
+that means this must be rejected:
+
+```text
+i42ei99e
+```
+
+`i42e` is a complete valid integer. `i99e` is extra data that wasn't asked for. if `decode` returned the first value and silently discarded the rest, callers could accidentally validate a prefix when they needed to validate the whole input.
+
+imagine parsing a tracker response. you parse the dictionary successfully, but the tracker actually sent two dicts back to back, maybe injected by a mitm. if trailing bytes are silently accepted, you'd never know. you'd process the first dict and move on.
+
+```rust
+if parser.offset != input.len() {
+    return Err(BencodeError::TrailingBytes {
+        offset: parser.offset,
+    });
+}
+```
+
+`decode` means "parse this input entirely." not "parse a prefix." the distinction matters when you're making trust decisions based on what the parser accepted.
+
+* * *
+
+## let the machine try to break it
+
+unit tests cover inputs i thought of. property tests cover families of inputs the machine invents.
+
+the most important property is round-trip stability:
+
+```text
+decode(encode(value)) == value
+```
+
+if i build a valid value in memory, encode it, and decode it again, i should get back exactly what i started with.
+
+using `proptest`, i generate arbitrary valid `BencodeValue`s with bounded depth:
+
+```rust
+fn arb_bencode_value() -> impl Strategy<Value = BencodeValue> {
+    let leaf = prop_oneof![
+        any::<i64>().prop_map(BencodeValue::Integer),
+        prop::collection::vec(any::<u8>(), 0..32)
+            .prop_map(|b| BencodeValue::Bytes(Bytes::from(b))),
+    ];
+
+    leaf.prop_recursive(8, 64, 8, |inner| {
+        prop_oneof![
+            prop::collection::vec(inner.clone(), 0..8)
+                .prop_map(BencodeValue::List),
+            prop::collection::btree_map(
+                prop::collection::vec(any::<u8>(), 0..16),
+                inner,
+                0..8,
+            ).prop_map(BencodeValue::Dict),
+        ]
+    })
+}
+
+proptest! {
+    #[test]
+    fn encode_decode_round_trip(value in arb_bencode_value()) {
+        prop_assert_eq!(decode(&encode(&value)), Ok(value));
+    }
+}
+```
+
+then there's the one that might be the most important test in the whole codebase:
+
+```rust
+proptest! {
+    #[test]
+    fn never_panics_on_arbitrary_input(
+        input in prop::collection::vec(any::<u8>(), 0..512)
+    ) {
+        let _ = decode(&input);
+    }
+}
+```
+
+this doesn't say arbitrary bytes should parse successfully. most random bytes are invalid bencode and will return `Err`. it says no sequence of bytes should cause the parser to panic. every result is either `Ok` or `Err`.
+
+for a parser that sits at a network boundary, that guarantee is not optional. it's table stakes.
+
+* * *
+
+## be honest about what's not done
+
+the roadmap for styx includes:
+
+```rust
+pub fn decode_torrent(input: &[u8]) -> Result<TorrentMetainfo, BencodeError>
+```
+
+a real torrent metainfo parser needs to validate announce urls, parse file trees, handle piece hashes, deal with bittorrent v1 vs v2 differences (BEP 3 vs BEP 52), and preserve the exact raw bencoded `info` bytes for info-hash computation. that's a full phase of work, not a quick addition.
+
+so for now:
+
+```rust
+pub fn decode_torrent(_input: &[u8]) -> Result<TorrentMetainfo, BencodeError> {
+    Err(BencodeError::TorrentMetainfoNotImplemented)
+}
+```
+
+a stub that returns a typed error beats a half-implementation every time. if something accidentally calls this before the phase is built, it gets a clear named error. it doesn't silently return a partial torrent that produces wrong downstream results.
+
+* * *
+
+## what's next
+
+phase 3 is the peer wire protocol: handshakes, message framing, bitfields, piece requests. everything two bittorrent clients say to each other once they've found each other.
+
+after that comes the `.torrent` metainfo parser. for bittorrent v2 (BEP 52), the stakes are high. the parser needs to reconstruct the exact bencoded bytes of the `info` dictionary to compute sha-256 info-hashes. any ambiguity in parsing produces the wrong hash, which produces failed handshakes. everything built in phase 2 is what makes that tractable.
+
+styx is a long build. but the long builds are the interesting ones.
+
+code is at [github.com/aetosdios27/Styx](https://github.com/aetosdios27/Styx).
+
+see you in phase 3.
