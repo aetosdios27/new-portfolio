@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { type MouseEvent, useEffect, useState, useMemo } from "react";
+import { useLenis } from "lenis/react";
 import { ChevronDown } from "lucide-react";
 
 export type HeadingInfo = {
@@ -12,6 +13,7 @@ export type HeadingInfo = {
 type HeadingNode = HeadingInfo & { children: HeadingInfo[] };
 
 export function TocRail({ headings }: { headings: HeadingInfo[] }) {
+  const lenis = useLenis();
   const [activeSlug, setActiveSlug] = useState<string>("");
   const [expandedOverrides, setExpandedOverrides] = useState<Record<string, boolean>>({});
 
@@ -111,7 +113,24 @@ export function TocRail({ headings }: { headings: HeadingInfo[] }) {
 
   if (headings.length === 0) return null;
 
-  const toggleExpand = (slug: string, e: React.MouseEvent) => {
+  const scrollToHeading = (slug: string, e: MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+
+    const target = document.getElementById(slug);
+    if (!target) return;
+
+    window.history.pushState(null, "", `#${slug}`);
+    setActiveSlug(slug);
+
+    if (lenis) {
+      lenis.scrollTo(target);
+      return;
+    }
+
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const toggleExpand = (slug: string, e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setExpandedOverrides((prev) => {
       const isCurrentlyExpanded = prev[slug] ?? (activeH2Slug === slug);
@@ -136,6 +155,7 @@ export function TocRail({ headings }: { headings: HeadingInfo[] }) {
             <div className="flex items-start justify-between w-full py-1.5">
               <a
                 href={`#${h2.slug}`}
+                onClick={(e) => scrollToHeading(h2.slug, e)}
                 className={`
                   flex-1 transition-all duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] no-underline
                   hover:opacity-100 leading-relaxed
@@ -171,6 +191,7 @@ export function TocRail({ headings }: { headings: HeadingInfo[] }) {
                         <a
                           key={h3.slug}
                           href={`#${h3.slug}`}
+                          onClick={(e) => scrollToHeading(h3.slug, e)}
                           className={`
                             pl-4 transition-all duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] no-underline
                             hover:opacity-100 leading-relaxed text-[11px]

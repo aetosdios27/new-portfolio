@@ -1,4 +1,6 @@
-import { getEntry, getEntries } from "@/lib/content";
+import { Children, isValidElement, type ReactNode } from "react";
+import Image from "next/image";
+import { getEntry } from "@/lib/content";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -9,11 +11,27 @@ import { CopyForLLM } from "@/components/CopyForLLM";
 
 import { TocRail } from "@/components/TocRail";
 
-const createHeading = (level: number) => ({ children }: any) => {
-  const text = Array.isArray(children) ? children.join('') : children;
-  const slug = text.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '');
-  const Tag = `h${level}` as any;
-  return <Tag id={slug} className="scroll-mt-32">{children}</Tag>;
+const getNodeText = (children: ReactNode): string => {
+  return Children.toArray(children)
+    .map((child) => {
+      if (typeof child === "string" || typeof child === "number") return String(child);
+      if (isValidElement<{ children?: ReactNode }>(child)) return getNodeText(child.props.children);
+      return "";
+    })
+    .join("");
+};
+
+const createHeading = (level: 2 | 3) => {
+  const Heading = ({ children }: { children: ReactNode }) => {
+    const text = getNodeText(children);
+    const slug = text.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]+/g, "");
+    const Tag = `h${level}` as const;
+
+    return <Tag id={slug} className="scroll-mt-32">{children}</Tag>;
+  };
+
+  Heading.displayName = `MdxH${level}`;
+  return Heading;
 };
 
 const components = {
@@ -55,10 +73,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <div style={{ viewTransitionName: `blog-${post.slug}` }}>
           {post.image && (
             <div className="w-full aspect-[21/9] border border-[var(--text)]/20 mb-8 overflow-hidden relative bg-[var(--bg)]">
-              <img 
+              <Image
                 src={post.image} 
                 alt={`${post.title} hero image`}
-                className="w-full h-full object-cover opacity-90"
+                fill
+                sizes="640px"
+                className="object-cover opacity-90"
               />
               <div className="absolute inset-0 bg-[var(--text)] mix-blend-color pointer-events-none"></div>
             </div>

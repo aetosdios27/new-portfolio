@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { type CSSProperties, useEffect, useState } from "react"
 import { GitHubCalendar } from "react-github-calendar"
+import type { ThemeInput } from "react-activity-calendar"
 
 export function Activity() {
   const [mounted, setMounted] = useState(false)
@@ -14,7 +15,7 @@ export function Activity() {
     return <div className="h-[110px] w-full animate-pulse bg-[var(--text)] opacity-10 rounded-sm" />
   }
 
-  const explicitTheme: any = {
+  const explicitTheme: ThemeInput = {
     light: [
       'color-mix(in srgb, var(--text) 5%, transparent)', 
       'color-mix(in srgb, var(--text) 30%, transparent)', 
@@ -31,13 +32,14 @@ export function Activity() {
     ],
   };
 
-  return (
-    <div style={{ 
+  const calendarStyles: CSSProperties & Record<"--react-activity-calendar-tooltip-bg" | "--react-activity-calendar-tooltip-text", string> = {
       fontFamily: "var(--font-geist-mono)",
-      // @ts-ignore - custom css variables
       "--react-activity-calendar-tooltip-bg": "var(--text)",
       "--react-activity-calendar-tooltip-text": "var(--bg)"
-    }}>
+    };
+
+  return (
+    <div style={calendarStyles}>
       <GitHubCalendar 
         username="aetosdios27"
         theme={explicitTheme}

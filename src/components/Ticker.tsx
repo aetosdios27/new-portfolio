@@ -27,7 +27,7 @@ export function Ticker() {
         } else {
           setWeather("LOC_DENIED");
         }
-      } catch (err) {
+      } catch {
         setWeather("SYS_OFFLINE");
       }
     };

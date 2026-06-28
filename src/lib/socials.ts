@@ -25,7 +25,7 @@ export async function getGithubData(username: string): Promise<SocialData | null
         { label: "Followers", value: data.followers }
       ]
     };
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -38,7 +38,7 @@ export async function getGithubActivity(username: string) {
     if (!res.ok) return null;
     const data = await res.json();
     return data.contributions;
-  } catch (e) {
+  } catch {
     return null;
   }
 }

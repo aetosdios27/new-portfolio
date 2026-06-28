@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import Image from "next/image"
 import Link from "next/link"
 
 interface ProjectData {
@@ -157,10 +158,12 @@ export function FlightBoard({ projects }: FlightBoardProps) {
                     onClick={(e) => e.stopPropagation()}
                     className="relative block w-full h-full border border-[var(--text)]/20 bg-[var(--text)]/5 overflow-hidden group-hover:shadow-[4px_4px_0px_var(--text)] transition-shadow duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
                   >
-                    <img 
+                    <Image
                       src={getHeroImage(project.slug)} 
                       alt={project.title}
-                      className="absolute inset-0 w-full h-full object-cover grayscale mix-blend-luminosity group-hover:grayscale-0 group-hover:mix-blend-normal transition-all duration-0"
+                      fill
+                      sizes="608px"
+                      className="object-cover grayscale mix-blend-luminosity group-hover:grayscale-0 group-hover:mix-blend-normal transition-all duration-0"
                     />
                     
                     {/* The Project Summary Ticker (Marquee) */}
@@ -168,7 +171,7 @@ export function FlightBoard({ projects }: FlightBoardProps) {
                       <div className="whitespace-nowrap py-1.5 flex animate-[marquee_30s_linear_infinite]">
                         {[...Array(4)].map((_, i) => (
                           <span key={i} className="text-[9px] tracking-widest uppercase text-[var(--text)] mx-4">
-                            // {getProjectSummary(project.slug)} // 
+                            {`// ${getProjectSummary(project.slug)} //`}
                           </span>
                         ))}
                       </div>

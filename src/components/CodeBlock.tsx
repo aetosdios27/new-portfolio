@@ -3,7 +3,9 @@
 import { useState, useRef } from "react";
 import { Check, Copy } from "lucide-react";
 
-export function CodeBlock({ children, ...props }: any) {
+type CodeBlockProps = React.ComponentPropsWithoutRef<"pre">;
+
+export function CodeBlock({ children, ...props }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
   const preRef = useRef<HTMLPreElement>(null);
 

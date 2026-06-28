@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { type CSSProperties, type ElementType, type MouseEvent, useEffect, useRef } from "react";
 
 interface KineticHeadingProps {
   children: string;
   className?: string;
-  as?: React.ElementType;
-  style?: React.CSSProperties;
+  as?: ElementType;
+  style?: CSSProperties;
 }
 
 export function KineticHeading({ children, className = "", as: Component = "h2", style }: KineticHeadingProps) {
-  const containerRef = useRef<any>(null);
   const lettersRef = useRef<(HTMLSpanElement | null)[]>([]);
   
   // Physics state
@@ -60,7 +59,7 @@ export function KineticHeading({ children, className = "", as: Component = "h2",
     return () => cancelAnimationFrame(animationFrameId);
   }, []);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = (e: MouseEvent) => {
     isHovered.current = true;
     const now = Date.now();
     if (lastMousePos.current) {
@@ -85,7 +84,6 @@ export function KineticHeading({ children, className = "", as: Component = "h2",
 
   return (
     <Component 
-      ref={containerRef}
       className={`flex flex-wrap cursor-crosshair ${className}`}
       style={style}
       onMouseMove={handleMouseMove}

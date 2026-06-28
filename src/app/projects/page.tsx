@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getEntries } from "@/lib/content";
 import { SiGithub } from "react-icons/si";
 
@@ -49,10 +50,12 @@ export default function ProjectsPage() {
             >
               {/* Background Mask Image */}
               <div className="absolute -inset-x-4 inset-y-0 pointer-events-none z-0 opacity-0 group-hover/item:opacity-20 transition-opacity duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hidden md:block overflow-hidden">
-                <img 
+                <Image
                   src={getHeroImage(project.slug)} 
                   alt=""
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="640px"
+                  className="object-cover"
                 />
                 <div className="absolute inset-0 bg-[var(--text)] mix-blend-color pointer-events-none"></div>
               </div>

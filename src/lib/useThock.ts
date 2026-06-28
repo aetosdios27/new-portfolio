@@ -8,7 +8,13 @@ export function useThock() {
   return useCallback(() => {
     try {
       if (!audioCtxRef.current) {
-        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const AudioContextConstructor =
+          window.AudioContext ??
+          (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+
+        if (!AudioContextConstructor) return;
+
+        audioCtxRef.current = new AudioContextConstructor();
       }
       
       const ctx = audioCtxRef.current;
@@ -62,7 +68,7 @@ export function useThock() {
       
       noise.start(t);
       
-    } catch (e) {
+    } catch {
       // Browser audio blocked or unsupported, silently fail
       console.warn("Web Audio API not supported or blocked");
     }

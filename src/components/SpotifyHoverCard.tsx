@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 
 export type SpotifyData = {
@@ -34,10 +35,12 @@ export function SpotifyHoverCard({ data }: { data: SpotifyData | null }) {
           <div className="w-4 h-4 border-2 border-[var(--text)]/20 border-t-[var(--text)] rounded-full animate-spin"></div>
         ) : (
           <>
-            <img 
-              src={data.albumImageUrl} 
+            <Image
+              src={data.albumImageUrl ?? "/pfp.jpg"} 
               alt="Album Art" 
-              className="w-full h-full object-cover grayscale mix-blend-luminosity group-hover:grayscale-0 group-hover:mix-blend-normal transition-all duration-300"
+              fill
+              sizes="48px"
+              className="object-cover grayscale mix-blend-luminosity group-hover:grayscale-0 group-hover:mix-blend-normal transition-all duration-300"
             />
             {data.isPlaying && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-[2px] opacity-0 group-hover:opacity-100 transition-opacity">

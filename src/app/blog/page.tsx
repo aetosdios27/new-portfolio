@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getEntries } from "@/lib/content";
 
 export default function BlogPage() {
@@ -8,7 +9,7 @@ export default function BlogPage() {
     <main className="min-h-svh flex flex-col pt-32 pb-16">
       <div className="flex flex-col w-full max-w-[640px] mx-auto px-6 lg:px-0">        
         <div className="flex flex-col group/list w-full border-t border-[var(--text)]/20" style={{ fontFamily: "var(--font-geist-mono)" }}>
-          {posts.map((post: any, i: number) => (
+          {posts.map((post, i) => (
             <Link 
               key={post.slug}
               href={`/blog/${post.slug}`}
@@ -17,10 +18,12 @@ export default function BlogPage() {
             >
               {post.image && (
                 <div className="absolute -inset-x-4 inset-y-0 pointer-events-none z-0 opacity-0 group-hover/item:opacity-20 transition-opacity duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hidden md:block overflow-hidden">
-                  <img 
+                  <Image
                     src={post.image} 
                     alt=""
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="640px"
+                    className="object-cover"
                   />
                   <div className="absolute inset-0 bg-[var(--text)] mix-blend-color pointer-events-none"></div>
                 </div>

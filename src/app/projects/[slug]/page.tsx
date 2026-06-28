@@ -1,4 +1,5 @@
-import { getEntry, getEntries } from "@/lib/content";
+import Image from "next/image";
+import { getEntry } from "@/lib/content";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -38,10 +39,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
         <div style={{ viewTransitionName: `project-${project.slug}` }}>
           {/* Brutalist Hero Media Block */}
           <div className="w-full aspect-[21/9] border border-[var(--text)]/20 mb-8 overflow-hidden relative bg-[var(--bg)]">
-            <img 
+            <Image
               src={getHeroImage(project.slug)} 
               alt={`${project.title} hero image`}
-              className="w-full h-full object-cover opacity-90"
+              fill
+              sizes="640px"
+              className="object-cover opacity-90"
             />
             <div className="absolute inset-0 bg-[var(--text)] mix-blend-color pointer-events-none"></div>
           </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { KineticHeading } from "@/components/KineticHeading"
 import { SpotifyHoverCard, type SpotifyData } from "@/components/SpotifyHoverCard"
@@ -83,11 +84,15 @@ export function Hero() {
           )}
         </AnimatePresence>
 
-        <img 
-          src="/pfp.jpg" 
-          alt="aetos" 
-          className="w-full h-full object-cover grayscale mix-blend-luminosity transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-[1.02]"
-        />
+        <div className="relative w-full h-full">
+          <Image
+            src="/pfp.jpg"
+            alt="aetos"
+            fill
+            sizes="(min-width: 640px) 112px, 80px"
+            className="object-cover grayscale mix-blend-luminosity transition-all duration-[500ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-[1.02]"
+          />
+        </div>
       </div>
     </div>
   )

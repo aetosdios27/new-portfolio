@@ -85,7 +85,7 @@ export default async function Home() {
             </KineticHeading>
             <div className="space-y-6 leading-relaxed">
               <p>
-                i'm unreasonably curious and i can't ship something i'm not proud of. bad combination for sleep, good combination for software.
+                i&apos;m unreasonably curious and i can&apos;t ship something i&apos;m not proud of. bad combination for sleep, good combination for software.
               </p>
 
               <ul className="list-disc ml-4 space-y-1">

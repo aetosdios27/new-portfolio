@@ -3,17 +3,44 @@ import { getNowPlaying, getRecentlyPlayed } from "@/lib/spotify";
 
 export const dynamic = "force-dynamic";
 
+type SpotifyArtist = {
+  name: string;
+};
+
+type SpotifyTrack = {
+  name: string;
+  artists: SpotifyArtist[];
+  album: {
+    images: { url: string }[];
+  };
+  external_urls: {
+    spotify: string;
+  };
+};
+
+type NowPlayingResponse = {
+  is_playing: boolean;
+  item?: SpotifyTrack;
+};
+
+type RecentlyPlayedResponse = {
+  items?: {
+    track: SpotifyTrack;
+    played_at: string;
+  }[];
+};
+
 export async function GET() {
   try {
-    let response = await getNowPlaying();
-    let song = response.status === 204 || response.status > 400 ? null : await response.json();
+    const response = await getNowPlaying();
+    const song = response.status === 204 || response.status > 400 ? null : await response.json() as NowPlayingResponse;
 
     if (song && song.item) {
       return NextResponse.json({
         isPlaying: song.is_playing,
         isRecent: !song.is_playing,
         title: song.item.name,
-        artist: song.item.artists.map((_artist: any) => _artist.name).join(", "),
+        artist: song.item.artists.map((artist) => artist.name).join(", "),
         albumImageUrl: song.item.album.images[0]?.url,
         songUrl: song.item.external_urls.spotify,
       });
@@ -35,7 +62,7 @@ export async function GET() {
       return NextResponse.json(lockedInPayload);
     }
 
-    const recentData = await recentResponse.json();
+    const recentData = await recentResponse.json() as RecentlyPlayedResponse;
     
     if (!recentData.items || recentData.items.length === 0) {
       return NextResponse.json(lockedInPayload);
@@ -56,7 +83,7 @@ export async function GET() {
       isPlaying: false,
       isRecent: true,
       title: track.name,
-      artist: track.artists.map((_artist: any) => _artist.name).join(", "),
+      artist: track.artists.map((artist) => artist.name).join(", "),
       albumImageUrl: track.album.images[0]?.url,
       songUrl: track.external_urls.spotify,
     });

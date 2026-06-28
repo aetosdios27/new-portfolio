@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { SocialData } from "@/lib/socials";
 import { SiGithub, SiX, SiHashnode } from "react-icons/si";
 
@@ -23,11 +24,13 @@ export function SocialPreviewCard({ data, position = "top" }: SocialPreviewCardP
       {/* Platform Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 border border-[var(--text)]/20 p-0.5 bg-[var(--bg)] shadow-[2px_2px_0px_var(--text)]">
-            <img 
+          <div className="relative w-12 h-12 border border-[var(--text)]/20 p-0.5 bg-[var(--bg)] shadow-[2px_2px_0px_var(--text)]">
+            <Image
               src="/pfp.jpg" 
               alt={data.handle}
-              className="w-full h-full object-cover grayscale mix-blend-luminosity"
+              fill
+              sizes="48px"
+              className="object-cover grayscale mix-blend-luminosity p-0.5"
             />
           </div>
           <div className="flex flex-col">
